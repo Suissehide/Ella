@@ -837,7 +837,6 @@ body.menu-open { overflow: hidden; }
 }
 .contact__body { margin-top: auto; padding-top: clamp(48px, 10vh, 120px); }
 .contact__title { font-size: clamp(3rem, 10vw, 11rem); }
-.contact__title .pill { width: 1.7em; background: var(--bg-2); }
 .contact__mailwrap { margin-top: clamp(4px, 1vw, 14px); }
 .contact__mail {
     display: block;

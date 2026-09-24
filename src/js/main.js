@@ -585,9 +585,7 @@
         document.title = `${t('contact')} — ${S.name}`;
         $('#contact-video').src = `${S.mediaBase}/reel.mp4`;
 
-        const pill = S.bySlug('le-caprice') || S.visibleProjects[0];
-        $('#contact-title').innerHTML = `<span class="line-mask"><span>${esc(t('sayHello')).replace('{pill}',
-            `<span class="pill"><video src="${S.media(pill.slug, 'preview.mp4')}" autoplay muted loop playsinline></video></span>`)}</span></span>`;
+        $('#contact-title').innerHTML = `<span class="line-mask"><span>${esc(t('sayHello'))}</span></span>`;
 
         const mail = $('#contact-mail');
         mail.href = `mailto:${c.email}`;
@@ -630,7 +628,6 @@
             gsap.from('.contact__bg video', { scale: 1.15, duration: 2.4, ease: 'expo.out' });
             gsap.from('.contact .line-mask > span', { yPercent: 110, duration: 1.2, stagger: 0.08, ease: 'expo.out', delay: 0.3 });
             gsap.from('#contact-mail', { yPercent: 110, duration: 1.2, ease: 'expo.out', delay: 0.45 });
-            gsap.from('.contact__title .pill', { width: 0, marginInline: 0, duration: 1.2, ease: 'expo.inOut', delay: 0.7 });
             gsap.from('.contact__copy', { opacity: 0, y: 12, duration: 1, ease: 'expo.out', delay: 0.8 });
             gsap.from('.contact__rows li', { yPercent: 100, opacity: 0, stagger: 0.08, duration: 1, ease: 'expo.out', delay: 0.7 });
         }
