@@ -4,6 +4,8 @@
    ========================================================================== */
 (function () {
     const S = window.SITE;
+    const L = window.I18N;
+    const t = L.t;
     const page = document.body.dataset.page;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const canHover = window.matchMedia('(hover: hover)').matches;
@@ -18,12 +20,23 @@
     const byCategory = (cat) => S.visibleProjects.filter((p) => p.category === cat);
 
     const NAV = [
-        ['Commercials', '/commercials/'],
-        ['Fiction', '/fiction/'],
-        ['Music Video', '/music-video/'],
-        ['Festival', '/festival/'],
-        ['Contact', '/contact/'],
+        ...Object.values(S.categories).map((c) => [c.label, c.path]),
+        [t('festival'), '/festival/'],
+        [t('contact'), '/contact/'],
     ];
+
+    /* Static page text marked with data-i18n="key" */
+    function translateStatic() {
+        $$('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+        $$('[data-i18n-label]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nLabel)));
+        const desc = $('meta[name="description"]');
+        if (desc) desc.content = t('description');
+    }
+
+    const langSwitch = () => `
+        <div class="lang" role="group" aria-label="${t('language')}">
+            ${L.langs.map((l) => `<button type="button" data-lang="${l}" aria-pressed="${l === L.lang}">${l.toUpperCase()}</button>`).join('<span aria-hidden="true">/</span>')}
+        </div>`;
 
     /* ------------------------------------------------------------------
        Chrome: nav, mobile menu, footer, cursor, curtain
@@ -37,17 +50,20 @@
         document.body.insertAdjacentHTML('afterbegin', `
             <header class="nav">
                 <a class="nav__logo scramble" href="/" data-text="${esc(S.name)}">${esc(S.name)}</a>
-                <ul class="nav__links">
-                    ${NAV.map(([label, href]) => `<li><a class="scramble" href="${href}" data-text="${label}"${isCurrent(href) ? ' aria-current="page"' : ''}>${label}</a></li>`).join('')}
-                </ul>
-                <button class="nav__toggle" type="button" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
+                <div class="nav__right">
+                    <ul class="nav__links">
+                        ${NAV.map(([label, href]) => `<li><a class="scramble" href="${href}" data-text="${label}"${isCurrent(href) ? ' aria-current="page"' : ''}>${label}</a></li>`).join('')}
+                    </ul>
+                    ${langSwitch()}
+                    <button class="nav__toggle" type="button" aria-label="${t('menu')}" aria-expanded="false"><span></span><span></span></button>
+                </div>
             </header>
             <div class="menu" aria-hidden="true">
                 <nav>${NAV.map(([label, href]) => `<a href="${href}">${label}</a>`).join('')}</nav>
                 <div class="menu__meta"><a href="mailto:${esc(S.contact.email)}">${esc(S.contact.email)}</a><span>${esc(S.contact.city)}</span></div>
             </div>
             <div class="curtain"></div>
-            <div class="cursor"><span>Play</span></div>
+            <div class="cursor"><span>${t('play')}</span></div>
         `);
 
         const footer = document.querySelector('footer[data-footer]');
@@ -55,8 +71,8 @@
             footer.className = 'footer';
             footer.innerHTML = `
                 <a class="footer__cta" href="mailto:${esc(S.contact.email)}">
-                    <span class="display line-mask"><span>Let's make</span></span>
-                    <span class="display line-mask"><span>a <em>film</em> together</span></span>
+                    <span class="display line-mask"><span>${t('ctaLine1')}</span></span>
+                    <span class="display line-mask"><span>${t('ctaLine2')}</span></span>
                     <span class="footer__mail">${esc(S.contact.email)} <span aria-hidden="true">&#8599;</span></span>
                 </a>
                 <div class="footer__bottom">
@@ -67,6 +83,8 @@
                     </nav>
                 </div>`;
         }
+
+        $$('.lang button').forEach((b) => b.addEventListener('click', () => L.set(b.dataset.lang)));
 
         const toggle = $('.nav__toggle');
         toggle.addEventListener('click', () => {
@@ -146,7 +164,7 @@
     function tileHTML(p, extraClass = '', meta = true) {
         const cat = S.categories[p.category];
         return `
-            <a class="tile ${extraClass}" href="${projectUrl(p)}" data-slug="${p.slug}" data-cursor="Play">
+            <a class="tile ${extraClass}" href="${projectUrl(p)}" data-slug="${p.slug}" data-cursor="${t('play')}">
                 <div class="tile__media">
                     <img src="${S.media(p.slug, 'poster.jpg')}" alt="${esc(p.title)}" loading="lazy">
                     <video muted loop playsinline preload="none" data-src="${S.media(p.slug, 'preview.mp4')}"></video>
@@ -242,6 +260,7 @@
         const featured = S.featured.map(S.bySlug).filter(Boolean);
         const counts = Object.fromEntries(Object.keys(S.categories).map((c) => [c, byCategory(c).length]));
 
+        document.title = `${S.name} — ${S.role}`;
         $('#hero-video').src = `${S.mediaBase}/reel.mp4`;
         $('#hero-lead').innerHTML = `${esc(S.role)} <span>&mdash;</span> ${esc(S.tagline)}`;
 
@@ -251,21 +270,21 @@
         $('#marquee').innerHTML = marqueeItems + marqueeItems;
 
         const pill = S.bySlug('remanence') || S.visibleProjects[0];
-        $('#about-heading').innerHTML = `Stories told <span class="pill"><video src="${S.media(pill.slug, 'preview.mp4')}" autoplay muted loop playsinline></video></span> in light and motion`;
+        $('#about-heading').innerHTML = esc(t('storiesHeading')).replace('{pill}', `<span class="pill"><video src="${S.media(pill.slug, 'preview.mp4')}" autoplay muted loop playsinline></video></span>`);
         $('#about-text').innerHTML = S.about.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ');
         const portrait = $('#about-portrait img');
         portrait.src = '/assets/ella.jpg';
         portrait.onerror = () => { portrait.onerror = null; portrait.src = S.media('remanence', 'still-3.jpg'); };
         $('#about-facts').innerHTML = `
-            <div><dt class="eyebrow">Based in</dt><dd>${esc(S.contact.city)}</dd></div>
-            <div><dt class="eyebrow">Films</dt><dd>${S.visibleProjects.length} projects</dd></div>
-            <div><dt class="eyebrow">Contact</dt><dd><a class="link-arrow" href="/contact/">Get in touch &#8599;</a></dd></div>`;
+            <div><dt class="eyebrow">${t('basedIn')}</dt><dd>${esc(S.contact.city)}</dd></div>
+            <div><dt class="eyebrow">${t('films')}</dt><dd>${t('projectsCount', { n: S.visibleProjects.length })}</dd></div>
+            <div><dt class="eyebrow">${t('contact')}</dt><dd><a class="link-arrow" href="/contact/">${t('getInTouch')} &#8599;</a></dd></div>`;
 
         const slicePick = { commercials: 'charmail', fiction: 'l-ombre-des-champs', 'music-video': 'mandat-de-depot' };
         $('#slices').innerHTML = Object.entries(S.categories).map(([key, c]) => {
             const p = S.bySlug(slicePick[key]) || byCategory(key)[0];
             return `
-                <a class="slice" href="${c.path}" data-cursor="Open">
+                <a class="slice" href="${c.path}" data-cursor="${t('open')}">
                     ${p ? `<img src="${S.media(p.slug, 'poster.jpg')}" alt="" loading="lazy"><video muted loop playsinline preload="none" data-src="${S.media(p.slug, 'preview.mp4')}"></video>` : ''}
                     <div class="slice__label"><h3 class="display">${c.label}<sup>${counts[key]}</sup></h3><span aria-hidden="true">&#8599;</span></div>
                 </a>`;
@@ -318,7 +337,7 @@
                 <div class="intro__row"><span>${esc(S.role)}</span><span>${esc(S.tagline)}</span></div>
                 <div>
                     <div class="intro__name display line-mask">${S.name.split('').map((c) => `<span class="char">${c === ' ' ? '&nbsp;' : c}</span>`).join('')}</div>
-                    <div class="intro__row" style="margin-top:24px"><span class="intro__count">0</span><span>Loading the reel</span></div>
+                    <div class="intro__row" style="margin-top:24px"><span class="intro__count">0</span><span>${t('loadingReel')}</span></div>
                 </div>
             </div>`);
         const intro = $('.intro');
@@ -338,6 +357,7 @@
         const cat = S.categories[key];
         const items = byCategory(key);
         document.title = `${cat.label} — ${S.name}`;
+        $('#cat-blurb').textContent = cat.blurb || '';
         $('#cat-title').innerHTML = `<span id="cat-name">${esc(cat.label)}</span><sup>${items.length}</sup>`;
 
         // Rhythm: wide, half, half... A trailing lone half becomes wide.
@@ -424,7 +444,7 @@
         $('.project__layout').classList.toggle('project__layout--portrait', portrait);
         player.innerHTML = `
             <video src="${S.media(p.slug, 'film.mp4')}" poster="${S.media(p.slug, 'poster.jpg')}" autoplay muted playsinline controls preload="auto"></video>
-            <button class="player__sound" type="button"><i><b></b><b></b><b></b></i> Sound on</button>`;
+            <button class="player__sound" type="button"><i><b></b><b></b><b></b></i> ${t('soundOn')}</button>`;
         const video = $('video', player);
         const sound = $('.player__sound', player);
         sound.addEventListener('click', () => {
@@ -436,20 +456,20 @@
         video.addEventListener('volumechange', () => { sound.hidden = !video.muted; });
 
         const rows = [
-            ['Type', p.type],
-            ['Client', p.client && p.client !== p.title ? p.client : ''],
-            ['Year', p.year],
-            ['Runtime', p.runtime],
+            [t('type'), p.type],
+            [t('client'), p.client && p.client !== p.title ? p.client : ''],
+            [t('year'), p.year],
+            [t('runtime'), p.runtime],
         ].filter(([, v]) => v);
         $('#info').innerHTML = `
             ${p.description ? `<p class="info__desc">${esc(p.description)}</p>` : ''}
             <dl>${rows.map(([k, v]) => `<dt class="eyebrow">${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
-            ${p.credits && p.credits.length ? `<div class="info__credits"><span class="eyebrow">Credits</span><ul>${p.credits.map(([r, n]) => `<li><span>${esc(r)}</span><span>${esc(n)}</span></li>`).join('')}</ul></div>` : ''}`;
+            ${p.credits && p.credits.length ? `<div class="info__credits"><span class="eyebrow">${t('credits')}</span><ul>${p.credits.map(([r, n]) => `<li><span>${esc(r)}</span><span>${esc(n)}</span></li>`).join('')}</ul></div>` : ''}`;
 
         const stills = $('#stills');
         stills.classList.toggle('stills--portrait', portrait);
         stills.innerHTML = [1, 2, 3, 4, 5, 6].map((n) =>
-            `<figure><img src="${S.media(p.slug, `still-${n}.jpg`)}" alt="${esc(p.title)} — still ${n}" loading="lazy"></figure>`).join('');
+            `<figure><img src="${S.media(p.slug, `still-${n}.jpg`)}" alt="${esc(p.title)} — ${t('still')} ${n}" loading="lazy"></figure>`).join('');
 
         const list = S.visibleProjects;
         const next = list[(list.indexOf(p) + 1) % list.length];
@@ -461,7 +481,7 @@
                 <img src="${S.media(next.slug, 'poster.jpg')}" alt="" loading="lazy">
                 <video muted loop playsinline preload="none" data-src="${S.media(next.slug, 'preview.mp4')}"></video>
             </div>
-            <div class="next__label"><span class="eyebrow">Next project</span><span class="display">${esc(next.title)}</span></div>`;
+            <div class="next__label"><span class="eyebrow">${t('nextProject')}</span><span class="display">${esc(next.title)}</span></div>`;
         nextEl.classList.add('tile');
         bindTiles(nextEl.parentElement);
 
@@ -477,6 +497,8 @@
 
     function festival() {
         const list = S.festivals || [];
+        document.title = `${t('festival')} — ${S.name}`;
+        $('#fest-title').textContent = t('festival');
         const title = splitChars($('#fest-title'));
         if (list.length) {
             $('#fest').innerHTML = `<ul class="fest">${list.map((f) => {
@@ -485,15 +507,15 @@
                     <span class="eyebrow">${esc(f.year || '')}</span>
                     <span class="fest__name">${esc(f.festival)}${f.city ? `<span class="eyebrow" style="display:block;margin-top:8px">${esc(f.city)}</span>` : ''}</span>
                     <span class="fest__film">${film ? `<a href="${projectUrl(film)}">${esc(film.title)}</a>` : esc(f.film || '')}</span>
-                    <span class="fest__award">${esc(f.award || 'Official selection')}</span>
+                    <span class="fest__award">${esc(f.award || t('officialSelection'))}</span>
                 </li>`;
             }).join('')}</ul>`;
         } else {
             $('#fest').innerHTML = `
                 <div class="empty">
                     <div>
-                        <p class="display">Selections to be announced</p>
-                        <p>Meanwhile, watch the films.</p>
+                        <p class="display">${t('festEmpty')}</p>
+                        <p>${t('festMeanwhile')}</p>
                         <p style="margin-top:28px"><a class="link-arrow" href="/fiction/">Fiction &#8594;</a></p>
                     </div>
                 </div>`;
@@ -506,17 +528,18 @@
 
     function contact() {
         const c = S.contact;
+        document.title = `${t('contact')} — ${S.name}`;
         $('#contact-video').src = `${S.mediaBase}/reel.mp4`;
         const mail = $('#contact-mail');
         mail.href = `mailto:${c.email}`;
         mail.textContent = c.email;
         fitWidth(mail, 150);
         const cells = [
-            ['Email', `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`],
-            c.phone && ['Phone', `<a href="tel:${esc(c.phone.replace(/\s/g, ''))}">${esc(c.phone)}</a>`],
+            [t('email'), `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`],
+            c.phone && [t('phone'), `<a href="tel:${esc(c.phone.replace(/\s/g, ''))}">${esc(c.phone)}</a>`],
             c.instagram && ['Instagram', `<a href="${esc(c.instagram)}" target="_blank" rel="noopener">${esc(c.instagramHandle || 'Instagram')}</a>`],
             c.vimeo && ['Vimeo', `<a href="${esc(c.vimeo)}" target="_blank" rel="noopener">Vimeo</a>`],
-            ['Based in', esc(c.city)],
+            [t('basedIn'), esc(c.city)],
         ].filter(Boolean);
         $('#contact-grid').innerHTML = cells.map(([k, v]) => `<div><dt class="eyebrow">${k}</dt><dd>${v}</dd></div>`).join('');
         if (hasGsap && !reduced) {
@@ -527,6 +550,7 @@
 
     /* ------------------------------------------------------------------ */
 
+    translateStatic();
     renderChrome();
     bindScramble();
     bindTransitions();

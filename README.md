@@ -7,6 +7,10 @@ Static site (HTML / CSS / vanilla JS + GSAP), served by nginx.
 Everything editable lives in `src/js/data.js`: projects, descriptions, credits,
 home mosaic, festivals, contact details, bio.
 
+The site is bilingual (FR / EN). Translated content is written `{ en: '...', fr: '...' }`
+in `data.js`; interface strings (buttons, headings) are in `src/js/i18n.js`.
+The language comes from `?lang=fr|en`, then the visitor's last choice, then the browser language.
+
 ## Media
 
 Raw videos go in `assets/projects/` (not committed). Generate web versions:

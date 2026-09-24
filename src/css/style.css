@@ -108,6 +108,14 @@ main { overflow-x: hidden; width: 100%; max-width: 100%; }
     text-transform: uppercase;
 }
 
+.nav__right { display: flex; align-items: center; gap: clamp(18px, 2.4vw, 40px); }
+
+.lang { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; letter-spacing: 0.1em; }
+.lang span { opacity: 0.4; }
+.lang button { padding: 6px 2px; opacity: 0.45; transition: opacity 0.3s ease; letter-spacing: inherit; font-size: inherit; font-weight: inherit; }
+.lang button:hover { opacity: 0.8; }
+.lang button[aria-pressed='true'] { opacity: 1; }
+
 .nav__links { display: flex; gap: clamp(18px, 2.4vw, 40px); list-style: none; }
 
 .nav__links a,

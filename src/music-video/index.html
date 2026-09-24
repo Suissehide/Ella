@@ -19,10 +19,10 @@
     <header class="page-head">
         <h1 class="page-head__title display" id="cat-title"></h1>
         <div class="page-head__bar">
-            <p>Music videos.</p>
-            <div class="toggle" role="group" aria-label="View">
-                <button type="button" data-view="grid" aria-pressed="true">Grid</button>
-                <button type="button" data-view="list" aria-pressed="false">List</button>
+            <p id="cat-blurb"></p>
+            <div class="toggle" role="group" aria-label="View" data-i18n-label="view">
+                <button type="button" data-view="grid" aria-pressed="true" data-i18n="grid">Grid</button>
+                <button type="button" data-view="list" aria-pressed="false" data-i18n="list">List</button>
             </div>
         </div>
     </header>
@@ -35,6 +35,7 @@
 
 <script src="/js/vendor/gsap.min.js"></script>
 <script src="/js/vendor/ScrollTrigger.min.js"></script>
+<script src="/js/i18n.js"></script>
 <script src="/js/data.js"></script>
 <script src="/js/main.js"></script>
 </body>
