@@ -3,9 +3,9 @@
 /.vscode/
 /.claude/
 
-# Heavy media: raw sources and generated files live in MinIO (bucket "ella")
-/assets/projects/
-/assets/media/
+# Source files: raw videos, generated media (hosted on MinIO, bucket "ella") and original photos.
+# The site's own images live in src/assets/.
+/assets/
 /src/media
 
 # macOS
