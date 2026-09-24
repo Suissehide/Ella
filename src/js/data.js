@@ -16,8 +16,8 @@
     const DIRECTOR = { en: 'Director', fr: 'Réalisation' };
 
     const SITE = {
-        // TODO: replace with the public URL of the MinIO bucket (no trailing slash)
-        mediaBase: isLocal ? '/media' : 'https://minio.example.com/ella',
+        // Public MinIO bucket (no trailing slash); local dev reads assets/media through src/media
+        mediaBase: isLocal ? '/media' : 'https://s3.qwetle.fr/ella',
 
         name: 'Ella Couffinhal',
         role: { en: 'Director', fr: 'Réalisatrice' },
