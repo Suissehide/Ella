@@ -1,0 +1,15 @@
+# IDE
+/.idea/
+/.vscode/
+/.claude/
+
+# Heavy media: raw sources and generated files live in MinIO (bucket "ella")
+/assets/projects/
+/assets/media/
+/src/media
+
+# macOS
+.DS_Store
+
+# Deploy secrets
+/deploy/.env
