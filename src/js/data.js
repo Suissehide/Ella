@@ -35,30 +35,30 @@
 
         // TODO: rewrite in Ella's own words
         about: {
-            en: 'Ella Couffinhal is a director working across fiction, commercials and music videos. From short films to brand campaigns, she brings the same attention to every frame: a strong image, a sincere emotion and a rhythm that holds you until the very last shot.',
-            fr: 'Ella Couffinhal est réalisatrice. Elle passe de la fiction à la publicité et au clip avec la même exigence pour chaque plan : une image forte, une émotion sincère et un rythme qui tient jusqu’à la dernière seconde.',
+            en: 'I’m a director. I move between fiction, commercials and music videos with the same care for every shot: a strong image, a sincere emotion and a rhythm that holds until the very last frame.',
+            fr: 'Je suis réalisatrice. Je passe de la fiction à la publicité et au clip avec la même exigence pour chaque plan : une image forte, une émotion sincère et un rythme qui tient jusqu’à la dernière seconde.',
         },
 
         categories: {
             commercials: {
                 label: { en: 'Commercials', fr: 'Publicités' },
-                blurb: { en: 'Brand films and campaigns.', fr: 'Films de marque et campagnes.' },
+                blurb: { en: 'The brand films and campaigns I’ve directed.', fr: 'Les films de marque et campagnes que j’ai réalisés.' },
                 path: '/commercials/',
             },
             fiction: {
                 label: 'Fiction',
-                blurb: { en: 'Short films, a series pilot and documentary work.', fr: 'Courts métrages, un pilote de série et du documentaire.' },
+                blurb: { en: 'My short films, a series pilot and a documentary.', fr: 'Mes courts métrages, un pilote de série et un documentaire.' },
                 path: '/fiction/',
             },
             'music-video': {
                 label: { en: 'Music Video', fr: 'Clips' },
-                blurb: { en: 'Music videos.', fr: 'Clips musicaux.' },
+                blurb: { en: 'The music videos I’ve directed.', fr: 'Les clips que j’ai réalisés.' },
                 path: '/music-video/',
             },
         },
 
         /*
-         * Fields: slug, title, category, type, client (optional), year, runtime,
+         * Fields: slug, title, category, type, client (optional), year, duration (seconds),
          * ratio ('16/9', '9/16', '2.39/1'...), description, credits [[role, name]].
          * draft: true hides a project until its media is ready.
          * Empty fields are simply not shown.
@@ -70,8 +70,8 @@
                 category: 'fiction',
                 type: SHORT,
                 year: '',
-                runtime: '2 min',
-                ratio: '16/9',
+                duration: 139,
+                ratio: '2.22/1',
                 description: { en: '', fr: '' },
                 credits: [[DIRECTOR, 'Ella Couffinhal']],
             },
@@ -82,7 +82,7 @@
                 type: COMMERCIAL,
                 client: 'Charmail',
                 year: '',
-                runtime: '1 min',
+                duration: 67,
                 ratio: '16/9',
                 description: { en: '', fr: '' },
                 credits: [[DIRECTOR, 'Ella Couffinhal']],
@@ -93,7 +93,7 @@
                 category: 'fiction',
                 type: SHORT,
                 year: '',
-                runtime: '6 min',
+                duration: 373,
                 ratio: '16/9',
                 description: { en: '', fr: '' },
                 credits: [[DIRECTOR, 'Ella Couffinhal']],
@@ -105,7 +105,7 @@
                 type: { en: 'Music video', fr: 'Clip' },
                 client: 'Lagui feat. Jul',
                 year: '',
-                runtime: '3 min',
+                duration: 183,
                 ratio: '3/2',
                 description: { en: '', fr: '' },
                 credits: [[DIRECTOR, 'Ella Couffinhal']],
@@ -117,7 +117,7 @@
                 type: COMMERCIAL,
                 client: 'Daniel Wellington',
                 year: '',
-                runtime: '41 s',
+                duration: 41,
                 ratio: '9/16',
                 description: { en: '', fr: '' },
                 credits: [[DIRECTOR, 'Ella Couffinhal']],
@@ -128,7 +128,7 @@
                 category: 'fiction',
                 type: { en: 'Series pilot', fr: 'Pilote de série' },
                 year: '',
-                runtime: '16 min',
+                duration: 955,
                 ratio: '2.2/1',
                 description: { en: '', fr: '' },
                 credits: [[DIRECTOR, 'Ella Couffinhal']],
@@ -139,8 +139,8 @@
                 category: 'fiction',
                 type: SHORT,
                 year: '',
-                runtime: '9 min',
-                ratio: '16/9',
+                duration: 560,
+                ratio: '2.35/1',
                 description: { en: '', fr: '' },
                 credits: [[DIRECTOR, 'Ella Couffinhal']],
             },
@@ -150,7 +150,7 @@
                 category: 'fiction',
                 type: SHORT,
                 year: '',
-                runtime: '7 min',
+                duration: 413,
                 ratio: '16/9',
                 description: { en: '', fr: '' },
                 credits: [[DIRECTOR, 'Ella Couffinhal']],
@@ -161,7 +161,7 @@
                 category: 'fiction',
                 type: { en: 'Documentary — teaser', fr: 'Documentaire — teaser' },
                 year: '',
-                runtime: '1 min',
+                duration: 58,
                 ratio: '16/9',
                 description: { en: '', fr: '' },
                 credits: [[DIRECTOR, 'Ella Couffinhal']],
@@ -189,4 +189,9 @@
     S.visibleProjects = S.projects.filter((p) => !p.draft);
     S.bySlug = (slug) => S.visibleProjects.find((p) => p.slug === slug);
     S.media = (slug, file) => `${S.mediaBase}/${slug}/${file}`;
+
+    // Credit-style runtime, e.g. 6′13″
+    S.projects.forEach((p) => {
+        if (p.duration && !p.runtime) p.runtime = `${Math.floor(p.duration / 60)}′${String(Math.round(p.duration % 60)).padStart(2, '0')}″`;
+    });
 })();

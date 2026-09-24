@@ -16,6 +16,19 @@
     const $ = (sel, root = document) => root.querySelector(sel);
     const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
     const esc = (str = '') => String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // *word* in a translated string becomes a serif italic accent
+    const rich = (str) => esc(str).replace(/\*(.+?)\*/g, '<em>$1</em>');
+    // SMPTE-style timecode at 25 fps
+    const timecode = (sec = 0) => {
+        const f = Math.floor((sec % 1) * 25);
+        const s = Math.floor(sec);
+        return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60, f].map((n) => String(n).padStart(2, '0')).join(':');
+    };
+    // '2.35/1' -> '2.35:1', '16/9' -> '16:9'
+    const ratioLabel = (r = '16/9') => {
+        const [a, b] = r.split('/');
+        return b === '1' ? `${Number(a).toFixed(2)}:1` : `${a}:${b}`;
+    };
     const projectUrl = (p) => `/project/?p=${encodeURIComponent(p.slug)}`;
     const byCategory = (cat) => S.visibleProjects.filter((p) => p.category === cat);
 
@@ -52,18 +65,22 @@
                 <a class="nav__logo scramble" href="/" data-text="${esc(S.name)}">${esc(S.name)}</a>
                 <div class="nav__right">
                     <ul class="nav__links">
-                        ${NAV.map(([label, href]) => `<li><a class="scramble" href="${href}" data-text="${label}"${isCurrent(href) ? ' aria-current="page"' : ''}>${label}</a></li>`).join('')}
+                        ${NAV.filter(([, href]) => href !== '/contact/').map(([label, href]) => `<li><a class="scramble" href="${href}" data-text="${label}"${isCurrent(href) ? ' aria-current="page"' : ''}>${label}</a></li>`).join('')}
                     </ul>
                     ${langSwitch()}
                     <button class="nav__toggle" type="button" aria-label="${t('menu')}" aria-expanded="false"><span></span><span></span></button>
                 </div>
             </header>
+            <div class="nav-cta">
+                <a class="nav-cta__btn" href="/contact/"${isCurrent('/contact/') ? ' aria-current="page"' : ''}>
+                    <i aria-hidden="true"></i><span class="scramble" data-text="${t('contact')}">${t('contact')}</span>
+                </a>
+            </div>
             <div class="menu" aria-hidden="true">
                 <nav>${NAV.map(([label, href]) => `<a href="${href}">${label}</a>`).join('')}</nav>
                 <div class="menu__meta"><a href="mailto:${esc(S.contact.email)}">${esc(S.contact.email)}</a><span>${esc(S.contact.city)}</span></div>
             </div>
-            <div class="curtain"></div>
-            <div class="cursor"><span>${t('play')}</span></div>
+            <div class="curtain"><i></i><i></i></div>
         `);
 
         const footer = document.querySelector('footer[data-footer]');
@@ -76,7 +93,7 @@
                     <span class="footer__mail">${esc(S.contact.email)} <span aria-hidden="true">&#8599;</span></span>
                 </a>
                 <div class="footer__bottom">
-                    <span>&copy; ${new Date().getFullYear()} ${esc(S.name)}</span>
+                    <span><span class="footer__fin">Fin.</span>&copy; ${new Date().getFullYear()} ${esc(S.name)}</span>
                     <nav>
                         ${NAV.map(([label, href]) => `<a class="scramble" href="${href}" data-text="${label}">${label}</a>`).join('')}
                         ${S.contact.instagram ? `<a class="scramble" href="${esc(S.contact.instagram)}" target="_blank" rel="noopener" data-text="Instagram">Instagram</a>` : ''}
@@ -84,11 +101,24 @@
                 </div>`;
         }
 
+        // The contact pill sits outside the blended nav (so it keeps its colour): reserve its width
+        const cta = $('.nav-cta__btn');
+        const reserve = () => document.documentElement.style.setProperty('--cta-w', `${cta.offsetWidth}px`);
+        reserve();
+        if ('ResizeObserver' in window) new ResizeObserver(reserve).observe(cta);
+
+        // The bar only gets its dark background once the page has scrolled
+        const nav = $('.nav');
+        const onScroll = () => nav.classList.toggle('is-scrolled', window.scrollY > 8);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+
         $$('.lang button').forEach((b) => b.addEventListener('click', () => L.set(b.dataset.lang)));
 
         const toggle = $('.nav__toggle');
         toggle.addEventListener('click', () => {
             const open = document.body.classList.toggle('menu-open');
+            lockScroll(open);
             toggle.setAttribute('aria-expanded', open);
             $('.menu').setAttribute('aria-hidden', !open);
         });
@@ -121,12 +151,12 @@
 
     /* Accent curtain between internal pages */
     function bindTransitions() {
-        const curtain = $('.curtain');
+        const bars = $$('.curtain i');
         if (!hasGsap || reduced) return;
         if (sessionStorage.getItem('ec-curtain')) {
             sessionStorage.removeItem('ec-curtain');
-            gsap.set(curtain, { scaleY: 1, transformOrigin: 'top' });
-            gsap.to(curtain, { scaleY: 0, duration: 0.8, ease: 'expo.inOut', delay: 0.05 });
+            gsap.set(bars, { scaleY: 1 });
+            gsap.to(bars, { scaleY: 0, duration: 0.9, ease: 'expo.inOut', delay: 0.05 });
         }
         document.addEventListener('click', (e) => {
             const a = e.target.closest('a');
@@ -135,27 +165,26 @@
             if (url.origin !== location.origin || url.protocol === 'mailto:' || (url.pathname === location.pathname && url.search === location.search)) return;
             e.preventDefault();
             sessionStorage.setItem('ec-curtain', '1');
-            gsap.set(curtain, { transformOrigin: 'bottom' });
-            gsap.to(curtain, { scaleY: 1, duration: 0.6, ease: 'expo.inOut', onComplete: () => { location.href = url.href; } });
+            gsap.to(bars, { scaleY: 1, duration: 0.6, ease: 'expo.inOut', onComplete: () => { location.href = url.href; } });
         });
         // Coming back through the history cache must not leave the curtain closed
-        window.addEventListener('pageshow', (e) => { if (e.persisted) gsap.set(curtain, { scaleY: 0 }); });
+        window.addEventListener('pageshow', (e) => { if (e.persisted) gsap.set(bars, { scaleY: 0 }); });
     }
 
-    /* Accent disc following the cursor over playable things */
-    function bindCursor() {
-        if (!canHover || !hasGsap) return;
-        const cursor = $('.cursor');
-        const label = $('span', cursor);
-        const xTo = gsap.quickTo(cursor, 'x', { duration: 0.45, ease: 'power3' });
-        const yTo = gsap.quickTo(cursor, 'y', { duration: 0.45, ease: 'power3' });
-        window.addEventListener('mousemove', (e) => { xTo(e.clientX); yTo(e.clientY); });
-        document.addEventListener('mouseover', (e) => {
-            const target = e.target.closest('[data-cursor]');
-            if (target) label.textContent = target.dataset.cursor;
-            gsap.to(cursor, { scale: target ? 1 : 0, duration: 0.5, ease: 'expo.out', overwrite: 'auto' });
-        });
+    /* Smooth wheel scrolling (Lenis), driven by the GSAP ticker so ScrollTrigger stays in sync.
+       Touch keeps native scrolling. */
+    let lenis = null;
+    function smoothScroll() {
+        if (!window.Lenis || !hasGsap || reduced) return;
+        lenis = new Lenis({ lerp: 0.09, smoothTouch: false });
+        lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add((time) => lenis.raf(time * 1000));
+        gsap.ticker.lagSmoothing(0);
     }
+    const lockScroll = (locked) => {
+        if (lenis) (locked ? lenis.stop() : lenis.start());
+        document.documentElement.style.overflow = locked ? 'hidden' : '';
+    };
 
     /* ------------------------------------------------------------------
        Tiles with lazy hover previews
@@ -164,14 +193,16 @@
     function tileHTML(p, extraClass = '', meta = true) {
         const cat = S.categories[p.category];
         return `
-            <a class="tile ${extraClass}" href="${projectUrl(p)}" data-slug="${p.slug}" data-cursor="${t('play')}">
+            <a class="tile ${extraClass}" href="${projectUrl(p)}" data-slug="${p.slug}">
                 <div class="tile__media">
                     <img src="${S.media(p.slug, 'poster.jpg')}" alt="${esc(p.title)}" loading="lazy">
                     <video muted loop playsinline preload="none" data-src="${S.media(p.slug, 'preview.mp4')}"></video>
                 </div>
+                <span class="tile__vf" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+                <span class="tile__hud" aria-hidden="true"><span><b></b><span data-tc>00:00:00:00</span></span><span>${ratioLabel(p.ratio)}</span></span>
                 <div class="tile__caption">
                     <h3 class="tile__title">${esc(p.title)}</h3>
-                    ${meta ? `<span class="tile__meta"><b>${esc(p.client && p.client !== p.title ? p.client : p.type)}</b>${esc(cat ? cat.label : '')}</span>` : ''}
+                    ${meta ? `<span class="tile__meta"><b>${esc(p.client && p.client !== p.title ? p.client : p.type)}</b>${esc(p.runtime || (cat ? cat.label : ''))}</span>` : ''}
                 </div>
             </a>`;
     }
@@ -201,13 +232,31 @@
         }
     }
 
-    /* Scale a single-line title so it spans exactly the available width */
+    /* Running timecodes: hero reel and any playing tile preview */
+    function runTimecodes() {
+        const hero = $('#hero-video');
+        const heroTc = $('#hero-tc');
+        const tick = () => {
+            if (hero && heroTc) heroTc.textContent = timecode(hero.currentTime);
+            $$('.tile.is-playing').forEach((tile) => {
+                const v = $('video', tile);
+                const out = $('[data-tc]', tile);
+                if (v && out) out.textContent = timecode(v.currentTime);
+            });
+            requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }
+
+    /* Scale a single-line title so it spans exactly the available width.
+       max: pixel cap, or a function returning one (evaluated on resize) */
     function fitWidth(el, max = Infinity) {
         const fit = () => {
             if (getComputedStyle(el).whiteSpace !== 'nowrap') { el.style.fontSize = ''; return; }
             el.style.fontSize = '100px';
             const avail = el.parentElement.clientWidth - parseFloat(getComputedStyle(el.parentElement).paddingLeft) - parseFloat(getComputedStyle(el.parentElement).paddingRight);
-            el.style.fontSize = `${Math.min(max, Math.floor((100 * avail) / el.scrollWidth * 10) / 10)}px`;
+            const cap = typeof max === 'function' ? max() : max;
+            el.style.fontSize = `${Math.min(cap, Math.floor((100 * avail) / el.scrollWidth * 10) / 10)}px`;
         };
         fit();
         document.fonts && document.fonts.ready.then(fit);
@@ -262,19 +311,17 @@
 
         document.title = `${S.name} — ${S.role}`;
         $('#hero-video').src = `${S.mediaBase}/reel.mp4`;
-        $('#hero-lead').innerHTML = `${esc(S.role)} <span>&mdash;</span> ${esc(S.tagline)}`;
+        $('#hero-lead').textContent = S.tagline;
+        $('#hero-title').textContent = S.role;
 
         $('#mosaic').innerHTML = featured.map((p, i) => tileHTML(p, i === 0 || i === 4 ? 'tile--xl' : '')).join('');
 
         const marqueeItems = S.visibleProjects.map((p) => `<a href="${projectUrl(p)}">${esc(p.title)}</a>`).join('');
         $('#marquee').innerHTML = marqueeItems + marqueeItems;
 
-        const pill = S.bySlug('remanence') || S.visibleProjects[0];
-        $('#about-heading').innerHTML = esc(t('storiesHeading')).replace('{pill}', `<span class="pill"><video src="${S.media(pill.slug, 'preview.mp4')}" autoplay muted loop playsinline></video></span>`);
-        $('#about-text').innerHTML = S.about.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ');
-        const portrait = $('#about-portrait img');
-        portrait.src = '/assets/ella.jpg';
-        portrait.onerror = () => { portrait.onerror = null; portrait.src = S.media('remanence', 'still-3.jpg'); };
+        $('#about-heading').innerHTML = rich(t('storiesHeading'));
+        $('#about-text').textContent = S.about;
+        $('#about-portrait img').src = '/assets/ella.jpg';
         $('#about-facts').innerHTML = `
             <div><dt class="eyebrow">${t('basedIn')}</dt><dd>${esc(S.contact.city)}</dd></div>
             <div><dt class="eyebrow">${t('films')}</dt><dd>${t('projectsCount', { n: S.visibleProjects.length })}</dd></div>
@@ -284,7 +331,7 @@
         $('#slices').innerHTML = Object.entries(S.categories).map(([key, c]) => {
             const p = S.bySlug(slicePick[key]) || byCategory(key)[0];
             return `
-                <a class="slice" href="${c.path}" data-cursor="${t('open')}">
+                <a class="slice" href="${c.path}">
                     ${p ? `<img src="${S.media(p.slug, 'poster.jpg')}" alt="" loading="lazy"><video muted loop playsinline preload="none" data-src="${S.media(p.slug, 'preview.mp4')}"></video>` : ''}
                     <div class="slice__label"><h3 class="display">${c.label}<sup>${counts[key]}</sup></h3><span aria-hidden="true">&#8599;</span></div>
                 </a>`;
@@ -298,27 +345,22 @@
 
         bindTiles($('#mosaic'));
         const titleChars = splitChars($('#hero-title'));
-        fitWidth($('#hero-title'));
+        // Full width, but never taller than about half the screen
+        fitWidth($('#hero-title'), () => window.innerHeight * 0.52);
         heroIntro(titleChars);
 
         if (hasGsap && !reduced) {
             scaleOnScroll($$('#mosaic .tile'));
-            // Scrubbed word-by-word reveal of the bio
-            gsap.to('#about-text .w', {
-                opacity: 1, stagger: 0.08, ease: 'none',
-                scrollTrigger: { trigger: '#about-text', start: 'top 80%', end: 'bottom 45%', scrub: true },
-            });
-            // Hero title drifts and fades under the next section
-            gsap.to('.hero__inner', {
-                yPercent: -18, opacity: 0, ease: 'none',
-                scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
-            });
+            // The hero stays put (sticky) while the page body slides over it:
+            // the reel recedes and darkens, the title drifts up and fades.
+            const cover = { trigger: '.page-body', start: 'top bottom', end: 'top top', scrub: true };
+            gsap.to('.hero__inner', { yPercent: -30, opacity: 0, ease: 'none', scrollTrigger: cover });
+            gsap.to('.hero__video', { scale: 1.08, filter: 'brightness(0.35)', ease: 'none', scrollTrigger: cover });
+            gsap.to('.viewfinder', { opacity: 0, ease: 'none', scrollTrigger: { ...cover, end: 'top 40%' } });
             gsap.from('.slice', {
                 yPercent: 12, opacity: 0, stagger: 0.1, duration: 1.2, ease: 'expo.out',
                 scrollTrigger: { trigger: '#slices', start: 'top 85%' },
             });
-        } else {
-            $$('#about-text .w').forEach((w) => (w.style.opacity = 1));
         }
     }
 
@@ -334,7 +376,7 @@
 
         document.body.insertAdjacentHTML('beforeend', `
             <div class="intro" aria-hidden="true">
-                <div class="intro__row"><span>${esc(S.role)}</span><span>${esc(S.tagline)}</span></div>
+                <div class="intro__row"><span>${esc(S.role)} &mdash; ${esc(S.tagline)}</span><span>Roll A001 &nbsp; Sc. 1 &nbsp; Tk. 1</span></div>
                 <div>
                     <div class="intro__name display line-mask">${S.name.split('').map((c) => `<span class="char">${c === ' ' ? '&nbsp;' : c}</span>`).join('')}</div>
                     <div class="intro__row" style="margin-top:24px"><span class="intro__count">0</span><span>${t('loadingReel')}</span></div>
@@ -343,8 +385,8 @@
         const intro = $('.intro');
         fitWidth($('.intro__name'));
         const counter = { v: 0 };
-        document.documentElement.style.overflow = 'hidden';
-        gsap.timeline({ onComplete: () => { intro.remove(); document.documentElement.style.overflow = ''; } })
+        lockScroll(true);
+        gsap.timeline({ onComplete: () => { intro.remove(); lockScroll(false); } })
             .from($$('.intro__name .char'), { yPercent: 110, duration: 1, stagger: 0.04, ease: 'expo.out' })
             .to(counter, { v: 100, duration: 1.4, ease: 'power2.inOut', onUpdate: () => { $('.intro__count').textContent = Math.round(counter.v); } }, 0.1)
             .to($$('.intro__name .char'), { yPercent: -110, duration: 0.7, stagger: 0.02, ease: 'expo.in' }, '+=0.1')
@@ -460,6 +502,7 @@
             [t('client'), p.client && p.client !== p.title ? p.client : ''],
             [t('year'), p.year],
             [t('runtime'), p.runtime],
+            [t('format'), ratioLabel(p.ratio)],
         ].filter(([, v]) => v);
         $('#info').innerHTML = `
             ${p.description ? `<p class="info__desc">${esc(p.description)}</p>` : ''}
@@ -468,8 +511,19 @@
 
         const stills = $('#stills');
         stills.classList.toggle('stills--portrait', portrait);
-        stills.innerHTML = [1, 2, 3, 4, 5, 6].map((n) =>
-            `<figure><img src="${S.media(p.slug, `still-${n}.jpg`)}" alt="${esc(p.title)} — ${t('still')} ${n}" loading="lazy"></figure>`).join('');
+        // Stills are taken at these fractions of the film (see scripts/build-media.sh)
+        const STILL_AT = [0.14, 0.28, 0.42, 0.56, 0.70, 0.84];
+        stills.innerHTML = STILL_AT.map((_, i) => `
+            <figure>
+                <img src="${S.media(p.slug, `still-${i + 1}.jpg`)}" alt="${esc(p.title)} — ${t('still')} ${i + 1}" loading="lazy">
+                <figcaption><span>A001 &middot; ${String(i + 1).padStart(2, '0')}</span><span data-still-tc></span></figcaption>
+            </figure>`).join('');
+        const stampStills = (duration) => {
+            if (!duration || !isFinite(duration)) return;
+            $$('[data-still-tc]', stills).forEach((el, i) => { el.textContent = timecode(duration * STILL_AT[i]); });
+        };
+        stampStills(p.duration);
+        video.addEventListener('loadedmetadata', () => stampStills(video.duration));
 
         const list = S.visibleProjects;
         const next = list[(list.indexOf(p) + 1) % list.length];
@@ -530,21 +584,55 @@
         const c = S.contact;
         document.title = `${t('contact')} — ${S.name}`;
         $('#contact-video').src = `${S.mediaBase}/reel.mp4`;
+
+        const pill = S.bySlug('le-caprice') || S.visibleProjects[0];
+        $('#contact-title').innerHTML = `<span class="line-mask"><span>${esc(t('sayHello')).replace('{pill}',
+            `<span class="pill"><video src="${S.media(pill.slug, 'preview.mp4')}" autoplay muted loop playsinline></video></span>`)}</span></span>`;
+
         const mail = $('#contact-mail');
         mail.href = `mailto:${c.email}`;
         mail.textContent = c.email;
         fitWidth(mail, 150);
-        const cells = [
-            [t('email'), `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`],
-            c.phone && [t('phone'), `<a href="tel:${esc(c.phone.replace(/\s/g, ''))}">${esc(c.phone)}</a>`],
-            c.instagram && ['Instagram', `<a href="${esc(c.instagram)}" target="_blank" rel="noopener">${esc(c.instagramHandle || 'Instagram')}</a>`],
-            c.vimeo && ['Vimeo', `<a href="${esc(c.vimeo)}" target="_blank" rel="noopener">Vimeo</a>`],
-            [t('basedIn'), esc(c.city)],
-        ].filter(Boolean);
-        $('#contact-grid').innerHTML = cells.map(([k, v]) => `<div><dt class="eyebrow">${k}</dt><dd>${v}</dd></div>`).join('');
+
+        const copy = $('#contact-copy');
+        if (navigator.clipboard) {
+            copy.textContent = t('copyEmail');
+            copy.addEventListener('click', () => {
+                navigator.clipboard.writeText(c.email).then(() => {
+                    copy.textContent = t('copied');
+                    copy.classList.add('is-done');
+                    clearTimeout(copy._t);
+                    copy._t = setTimeout(() => { copy.textContent = t('copyEmail'); copy.classList.remove('is-done'); }, 2000);
+                });
+            });
+        } else {
+            copy.remove();
+        }
+
+        const row = (label, value, href, external) => href
+            ? `<li><a class="contact__row" href="${esc(href)}"${external ? ' target="_blank" rel="noopener"' : ''}><span class="eyebrow">${label}</span><span class="contact__val">${value}</span><span class="contact__arrow" aria-hidden="true">&#8599;</span></a></li>`
+            : `<li><div class="contact__row"><span class="eyebrow">${label}</span><span class="contact__val">${value}</span></div></li>`;
+        $('#contact-rows').innerHTML = [
+            c.instagram && row('Instagram', esc(c.instagramHandle || 'Instagram'), c.instagram, true),
+            c.vimeo && row('Vimeo', 'Vimeo', c.vimeo, true),
+            c.phone && row(t('phone'), esc(c.phone), `tel:${c.phone.replace(/\s/g, '')}`),
+            row(t('basedIn'), `${esc(c.city)} <time class="contact__clock" id="contact-clock"></time>`),
+        ].filter(Boolean).join('');
+
+        // Local time in Paris, so visitors abroad know when to expect an answer
+        const clock = $('#contact-clock');
+        const fmt = new Intl.DateTimeFormat(L.lang, { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris', timeZoneName: 'short' });
+        const tick = () => { clock.textContent = fmt.format(new Date()); };
+        tick();
+        setInterval(tick, 15000);
+
         if (hasGsap && !reduced) {
+            gsap.from('.contact__bg video', { scale: 1.15, duration: 2.4, ease: 'expo.out' });
             gsap.from('.contact .line-mask > span', { yPercent: 110, duration: 1.2, stagger: 0.08, ease: 'expo.out', delay: 0.3 });
-            gsap.from('#contact-grid > div', { y: 24, opacity: 0, stagger: 0.08, duration: 1, ease: 'expo.out', delay: 0.6 });
+            gsap.from('#contact-mail', { yPercent: 110, duration: 1.2, ease: 'expo.out', delay: 0.45 });
+            gsap.from('.contact__title .pill', { width: 0, marginInline: 0, duration: 1.2, ease: 'expo.inOut', delay: 0.7 });
+            gsap.from('.contact__copy', { opacity: 0, y: 12, duration: 1, ease: 'expo.out', delay: 0.8 });
+            gsap.from('.contact__rows li', { yPercent: 100, opacity: 0, stagger: 0.08, duration: 1, ease: 'expo.out', delay: 0.7 });
         }
     }
 
@@ -554,7 +642,8 @@
     renderChrome();
     bindScramble();
     bindTransitions();
-    bindCursor();
+    smoothScroll();
+    runTimecodes();
 
     ({ home, category, project, festival, contact })[page]?.();
 
