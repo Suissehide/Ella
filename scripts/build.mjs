@@ -79,7 +79,7 @@ function seoFor(page, S, L, lang) {
     const t = L.t;
     const url = (p) => S.siteUrl + localPath(p, lang);
     const person = { '@id': `${S.siteUrl}/#ella` };
-    const defaultImage = { url: `${S.siteUrl}/assets/og.jpg`, width: 1200, height: 630 };
+    const defaultImage = { url: `${S.siteUrl}/assets/og.jpg?v=2`, width: 1200, height: 630 };
     const crumbs = (items) => ({
         '@type': 'BreadcrumbList',
         itemListElement: items.map(([name, p], i) => ({ '@type': 'ListItem', position: i + 1, name, item: url(p) })),
