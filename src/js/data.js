@@ -27,13 +27,12 @@
         tagline: { en: 'Fiction, commercials & music videos', fr: 'Fiction, publicités & clips' },
 
         contact: {
-            // TODO: fill in real contact details
-            email: 'contact@ellacouffinhal.com',
+            email: 'ella.couffinhal@gmail.com',
             phone: '',
-            instagram: 'https://www.instagram.com/',
-            instagramHandle: '@ellacouffinhal',
+            instagram: 'https://www.instagram.com/ella_couffinhal/',
+            instagramHandle: '@ella_couffinhal',
             vimeo: '',
-            city: 'Paris',
+            city: 'Paris / Bordeaux',
         },
 
         // TODO: rewrite in Ella's own words
