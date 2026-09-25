@@ -6,7 +6,7 @@ Public address: https://ellacouffinhal.com
 ## Content
 
 Everything editable lives in `src/js/data.js`: projects, descriptions, credits, years,
-home mosaic, festivals, contact details, bio.
+home mosaic, concerts, contact details, bio.
 
 The site is bilingual. French is at the root (`/fiction/`), English under `/en/` (`/en/fiction/`).
 Translated content is written `{ en: '...', fr: '...' }` in `data.js`; interface strings

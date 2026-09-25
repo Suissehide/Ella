@@ -66,7 +66,7 @@ function pagesFor(S) {
     const pages = [
         { key: 'home', template: 'index.html', path: '/' },
         ...Object.entries(S.categories).map(([cat, c]) => ({ key: 'category', cat, template: `${cat}/index.html`, path: c.path })),
-        { key: 'festival', template: 'festival/index.html', path: '/festival/' },
+        { key: 'festival', template: 'concerts/index.html', path: '/concerts/' },
         { key: 'contact', template: 'contact/index.html', path: '/contact/' },
         ...S.visibleProjects.map((p) => ({ key: 'project', project: p, template: 'project/index.html', path: `/project/${p.slug}/` })),
         // Generic project page: only there to redirect old /project/?p=<slug> links

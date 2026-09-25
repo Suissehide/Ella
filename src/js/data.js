@@ -42,15 +42,15 @@
         },
 
         categories: {
+            fiction: {
+                label: { en: 'Fiction', fr: 'Fictions' },
+                blurb: { en: 'My short films, a series pilot and a documentary.', fr: 'Mes courts métrages, un pilote de série et un documentaire.' },
+                path: '/fiction/',
+            },
             commercials: {
                 label: { en: 'Commercials', fr: 'Publicités' },
                 blurb: { en: 'The brand films and campaigns I’ve worked on.', fr: 'Les films de marque et campagnes sur lesquels j’ai travaillé.' },
                 path: '/commercials/',
-            },
-            fiction: {
-                label: 'Fiction',
-                blurb: { en: 'My short films, a series pilot and a documentary.', fr: 'Mes courts métrages, un pilote de série et un documentaire.' },
-                path: '/fiction/',
             },
             'music-video': {
                 label: { en: 'Music Video', fr: 'Clips' },
@@ -179,9 +179,9 @@
         featured: ['mandat-de-depot', 'le-caprice', 'daniel-wellington', 'nemesis', 'l-ombre-des-champs', 'charmail'],
 
         /*
-         * Festival selections and awards.
-         * { year: '2025', festival: 'Festival name', city: 'City', film: 'slug',
-         *   award: { en: 'Official selection', fr: 'Sélection officielle' } }
+         * Concerts filmed.
+         * { year: '2025', festival: 'Artist or event', city: 'City', film: 'slug',
+         *   award: { en: 'Live', fr: 'Live' } }
          */
         festivals: [],
     };
