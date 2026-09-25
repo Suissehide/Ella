@@ -23,7 +23,7 @@
         mediaBase: isLocal ? '/media' : 'https://s3.qwetle.fr/ella',
 
         name: 'Ella Couffinhal',
-        role: { en: 'Director', fr: 'Réalisatrice' },
+        role: { en: 'Cinematographer', fr: 'Cheffe opératrice' },
         tagline: { en: 'Fiction, commercials & music videos', fr: 'Fiction, publicités & clips' },
 
         contact: {
@@ -37,14 +37,14 @@
 
         // TODO: rewrite in Ella's own words
         about: {
-            en: 'I’m a director. I move between fiction, commercials and music videos with the same care for every shot: a strong image, a sincere emotion and a rhythm that holds until the very last frame.',
-            fr: 'Je suis réalisatrice. Je passe de la fiction à la publicité et au clip avec la même exigence pour chaque plan : une image forte, une émotion sincère et un rythme qui tient jusqu’à la dernière seconde.',
+            en: 'I’m a cinematographer, camera assistant and editor. I move between fiction, commercials and music videos with the same care for every shot: a strong image, a sincere emotion and a rhythm that holds until the very last frame.',
+            fr: 'Je suis cheffe opératrice, assistante caméra et monteuse. Je passe de la fiction à la publicité et au clip avec la même exigence pour chaque plan : une image forte, une émotion sincère et un rythme qui tient jusqu’à la dernière seconde.',
         },
 
         categories: {
             commercials: {
                 label: { en: 'Commercials', fr: 'Publicités' },
-                blurb: { en: 'The brand films and campaigns I’ve directed.', fr: 'Les films de marque et campagnes que j’ai réalisés.' },
+                blurb: { en: 'The brand films and campaigns I’ve worked on.', fr: 'Les films de marque et campagnes sur lesquels j’ai travaillé.' },
                 path: '/commercials/',
             },
             fiction: {
@@ -54,7 +54,7 @@
             },
             'music-video': {
                 label: { en: 'Music Video', fr: 'Clips' },
-                blurb: { en: 'The music videos I’ve directed.', fr: 'Les clips que j’ai réalisés.' },
+                blurb: { en: 'The music videos I’ve worked on.', fr: 'Les clips sur lesquels j’ai travaillé.' },
                 path: '/music-video/',
             },
         },
