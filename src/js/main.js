@@ -321,8 +321,9 @@
 
         $('#mosaic').innerHTML = featured.map((p, i) => tileHTML(p, i === 0 || i === 5 ? 'tile--xl' : '')).join('');
 
-        const marqueeItems = S.visibleProjects.map((p) => `<a href="${projectUrl(p)}">${esc(p.title)}</a>`).join('');
+        const marqueeItems = S.visibleProjects.map((p) => `<a href="${projectUrl(p)}" data-slug="${p.slug}">${esc(p.title)}</a>`).join('');
         $('#marquee').innerHTML = marqueeItems + marqueeItems;
+        bindMarqueePreview();
 
         $('#about-heading').innerHTML = rich(t('storiesHeading'));
         $('#about-text').textContent = S.about;
@@ -367,6 +368,74 @@
                 scrollTrigger: { trigger: '#slices', start: 'top 85%' },
             });
         }
+    }
+
+    /* Home marquee: the band slows down under the cursor and the hovered film's still follows it.
+       What sits under the cursor is checked every frame rather than through mouseenter/mouseleave,
+       which fire late and in pairs while the page scrolls or the band slides under a still pointer. */
+    function bindMarqueePreview() {
+        if (!canHover || !hasGsap) return;
+        const band = $('.marquee');
+        const track = $('#marquee');
+        band.classList.add('is-live');
+        const box = document.createElement('div');
+        box.className = 'marquee-preview';
+        box.innerHTML = '<img alt="">';
+        // Inside .page-body, just under the band, so the titles stay readable over the still
+        band.before(box);
+        const img = $('img', box);
+        const xTo = gsap.quickTo(box, 'x', { duration: 0.7, ease: 'power3' });
+        const yTo = gsap.quickTo(box, 'y', { duration: 0.7, ease: 'power3' });
+        const tilt = gsap.quickTo(box, 'rotation', { duration: 0.9, ease: 'power3' });
+        const anim = track.getAnimations ? track.getAnimations()[0] : null;
+        const speed = { rate: 1 };
+        const setRate = (rate) => anim && gsap.to(speed, { rate, duration: 0.8, ease: 'power2.out', overwrite: true, onUpdate: () => { anim.playbackRate = speed.rate; } });
+
+        const pointer = { x: 0, y: 0, known: false };
+        let inBand = false;
+        let current = null;
+        let warmed = false;
+
+        window.addEventListener('mousemove', (e) => {
+            tilt(gsap.utils.clamp(-8, 8, (e.clientX - pointer.x) * 0.6));
+            pointer.x = e.clientX; pointer.y = e.clientY; pointer.known = true;
+            if (inBand) { xTo(pointer.x); yTo(pointer.y); }
+        }, { passive: true });
+        document.documentElement.addEventListener('mouseleave', () => { pointer.known = false; });
+
+        const setCurrent = (a) => {
+            if (a === current) return;
+            if (current) current.classList.remove('is-active');
+            current = a;
+            band.classList.toggle('is-hovering', !!a);
+            if (a) {
+                a.classList.add('is-active');
+                const src = S.media(a.dataset.slug, 'poster.jpg');
+                if (!img.src.endsWith(src)) img.src = src;
+                gsap.to(box, { opacity: 1, scale: 1, duration: 0.5, ease: 'expo.out', overwrite: 'auto' });
+            } else {
+                gsap.to(box, { opacity: 0, scale: 0.85, duration: 0.4, ease: 'expo.out', overwrite: 'auto' });
+            }
+        };
+
+        gsap.ticker.add(() => {
+            const r = band.getBoundingClientRect();
+            const inside = pointer.known && pointer.y >= r.top && pointer.y <= r.bottom && r.bottom > 0 && r.top < window.innerHeight;
+            if (inside !== inBand) {
+                inBand = inside;
+                setRate(inside ? 0.25 : 1);
+                if (inside) {
+                    gsap.set(box, { x: pointer.x, y: pointer.y });
+                    if (!warmed) {
+                        // Warm the cache so the stills swap instantly
+                        warmed = true;
+                        S.visibleProjects.forEach((p) => { new Image().src = S.media(p.slug, 'poster.jpg'); });
+                    }
+                }
+            }
+            const hit = inside ? document.elementFromPoint(pointer.x, pointer.y) : null;
+            setCurrent(hit ? hit.closest('#marquee a') : null);
+        });
     }
 
     /* Accent intro screen (once per session), then the hero title rises */
