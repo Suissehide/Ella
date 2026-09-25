@@ -105,7 +105,7 @@ function seoFor(page, S, L, lang) {
                             image: `${S.siteUrl}/assets/ella.jpg`,
                             email: `mailto:${S.contact.email}`,
                             address: { '@type': 'PostalAddress', addressLocality: S.contact.city, addressCountry: 'FR' },
-                            sameAs: [realProfile(S.contact.instagram), realProfile(S.contact.vimeo)].filter(Boolean),
+                            sameAs: [realProfile(S.contact.instagram), realProfile(S.contact.linkedin), realProfile(S.contact.vimeo)].filter(Boolean),
                         },
                         { '@type': 'WebSite', '@id': `${S.siteUrl}/#website`, name: S.name, url: url('/'), inLanguage: lang, publisher: person },
                     ],

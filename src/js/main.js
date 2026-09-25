@@ -99,6 +99,7 @@
                     <nav>
                         ${NAV.map(([label, href]) => `<a class="scramble" href="${href}" data-text="${label}">${label}</a>`).join('')}
                         ${S.contact.instagram ? `<a class="scramble" href="${esc(S.contact.instagram)}" target="_blank" rel="noopener" data-text="Instagram">Instagram</a>` : ''}
+                        ${S.contact.linkedin ? `<a class="scramble" href="${esc(S.contact.linkedin)}" target="_blank" rel="noopener" data-text="LinkedIn">LinkedIn</a>` : ''}
                     </nav>
                 </div>`;
         }
@@ -613,6 +614,7 @@
             : `<li><div class="contact__row"><span class="eyebrow">${label}</span><span class="contact__val">${value}</span></div></li>`;
         $('#contact-rows').innerHTML = [
             c.instagram && row('Instagram', esc(c.instagramHandle || 'Instagram'), c.instagram, true),
+            c.linkedin && row('LinkedIn', 'Ella Couffinhal', c.linkedin, true),
             c.vimeo && row('Vimeo', 'Vimeo', c.vimeo, true),
             c.phone && row(t('phone'), esc(c.phone), `tel:${c.phone.replace(/\s/g, '')}`),
             row(t('basedIn'), `${esc(c.city)} <time class="contact__clock" id="contact-clock"></time>`),

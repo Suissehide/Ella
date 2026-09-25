@@ -31,6 +31,7 @@
             phone: '',
             instagram: 'https://www.instagram.com/ella_couffinhal/',
             instagramHandle: '@ella_couffinhal',
+            linkedin: 'https://www.linkedin.com/in/ella-couffinhal/',
             vimeo: '',
             city: 'Paris / Bordeaux',
         },
