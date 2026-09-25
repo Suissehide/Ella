@@ -13,3 +13,6 @@
 
 # Deploy secrets
 /deploy/.env
+
+# Build output (scripts/build.mjs)
+/dist/

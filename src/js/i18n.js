@@ -1,28 +1,63 @@
 /*
  * Language handling and interface strings.
  *
- * Language order of precedence: ?lang=fr|en in the URL, the visitor's last
- * choice, then the browser language (French browsers get French, others English).
+ * The language is part of the URL, so each version can be indexed on its own:
+ * French at the root (/fiction/), English under /en/ (/en/fiction/).
+ * A visitor who picked a language with the switch is sent back to it on the
+ * next visit; nobody is redirected on the browser language alone (search
+ * engine crawlers would then only ever see one version).
  *
  * Content (bio, project types, descriptions...) is translated in data.js with
- * { en: '...', fr: '...' } values.
+ * { en: '...', fr: '...' } values. This file is also loaded by scripts/build.mjs
+ * to write each page's title and description.
  */
 (function () {
     const LANGS = ['fr', 'en'];
+    const DEFAULT = 'fr';
 
     const read = () => { try { return localStorage.getItem('ec-lang'); } catch (e) { return null; } };
     const write = (l) => { try { localStorage.setItem('ec-lang', l); } catch (e) { /* storage unavailable */ } };
 
-    const param = new URLSearchParams(location.search).get('lang');
-    const stored = read();
-    const browser = (navigator.language || '').toLowerCase().startsWith('fr') ? 'fr' : 'en';
-    const lang = LANGS.includes(param) ? param : LANGS.includes(stored) ? stored : browser;
-    if (LANGS.includes(param)) write(param);
-    document.documentElement.lang = lang;
+    // '/en/fiction/' -> ['en', '/fiction/']
+    const split = (pathname) => {
+        const m = pathname.match(/^\/(en)(\/.*|$)/);
+        return m ? [m[1], m[2] || '/'] : [DEFAULT, pathname];
+    };
+    // Path of the same page in another language
+    const localized = (path, l) => {
+        const [, base] = split(path);
+        return l === DEFAULT ? base : `/${l}${base}`;
+    };
+
+    const [lang, basePath] = split(location.pathname);
+
+    // Old ?lang= links, or a language chosen earlier with the switch
+    if (typeof window !== 'undefined' && window.document && !window.__BUILD__) {
+        const param = new URLSearchParams(location.search).get('lang');
+        const wanted = LANGS.includes(param) ? param : read();
+        if (LANGS.includes(param)) write(param);
+        if (LANGS.includes(wanted) && wanted !== lang) {
+            const url = new URL(location.href);
+            url.searchParams.delete('lang');
+            url.pathname = localized(basePath, wanted);
+            location.replace(url.href);
+        }
+        document.documentElement.lang = lang;
+    }
 
     const UI = {
         en: {
             description: 'Ella Couffinhal, director. Fiction, commercials and music videos.',
+            seoHomeTitle: 'Ella Couffinhal — Director | Fiction, commercials & music videos',
+            seoHomeDesc: 'Ella Couffinhal is a Paris-based director of short films, commercials and music videos: {titles}.',
+            seoCategoryTitle: '{label} — Ella Couffinhal, director',
+            seoProjectTitle: '{title} — {type} directed by Ella Couffinhal',
+            seoProjectDesc: '{title}, {type} directed by Ella Couffinhal{client}. Runtime {runtime}. Watch the film.',
+            seoFestivalTitle: 'Festivals — Ella Couffinhal, director',
+            seoContactTitle: 'Contact — Ella Couffinhal, director',
+            seoContactDesc: 'Get in touch with Ella Couffinhal, Paris-based director, for a film, a commercial or a music video.',
+            notFound: 'This page does not exist.',
+            backHome: 'Back to the home page',
             festival: 'Festival',
             contact: 'Contact',
             language: 'Language',
@@ -65,6 +100,16 @@
         },
         fr: {
             description: 'Ella Couffinhal, réalisatrice. Fiction, publicités et clips.',
+            seoHomeTitle: 'Ella Couffinhal — Réalisatrice | Fiction, publicités & clips',
+            seoHomeDesc: 'Ella Couffinhal, réalisatrice basée à Paris : courts métrages, publicités et clips. {titles}.',
+            seoCategoryTitle: '{label} — Ella Couffinhal, réalisatrice',
+            seoProjectTitle: '{title} — {type} d’Ella Couffinhal',
+            seoProjectDesc: '{title}, {type} d’Ella Couffinhal, réalisatrice{client}. Durée {runtime}. Voir le film.',
+            seoFestivalTitle: 'Festivals — Ella Couffinhal, réalisatrice',
+            seoContactTitle: 'Contact — Ella Couffinhal, réalisatrice',
+            seoContactDesc: 'Contacter Ella Couffinhal, réalisatrice basée à Paris, pour une fiction, une publicité ou un clip.',
+            notFound: 'Cette page n’existe pas.',
+            backHome: 'Retour à l’accueil',
             festival: 'Festivals',
             contact: 'Contact',
             language: 'Langue',
@@ -127,12 +172,14 @@
             return value;
         },
 
-        set(next) {
-            if (!LANGS.includes(next) || next === lang) return;
-            write(next);
-            const url = new URL(location.href);
-            url.searchParams.delete('lang');
-            location.replace(url.href);
+        /* Internal link in the current language: path('/fiction/') -> '/en/fiction/' */
+        path: (p) => localized(p, lang),
+        /* URL of the current page in another language */
+        switchUrl: (l) => {
+            const q = new URLSearchParams(location.search);
+            q.delete('lang');
+            return localized(basePath, l) + (q.toString() ? `?${q}` : '');
         },
+        remember: write,
     };
 })();

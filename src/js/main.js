@@ -29,26 +29,28 @@
         const [a, b] = r.split('/');
         return b === '1' ? `${Number(a).toFixed(2)}:1` : `${a}:${b}`;
     };
-    const projectUrl = (p) => `/project/?p=${encodeURIComponent(p.slug)}`;
+    const P = L.path; // internal links stay in the current language
+    const projectUrl = (p) => P(`/project/${encodeURIComponent(p.slug)}/`);
+    // Project pages live at /project/<slug>/ (old links: /project/?p=<slug>)
+    const currentSlug = () => (location.pathname.match(/\/project\/([^/]+)\/?$/) || [])[1] || new URLSearchParams(location.search).get('p');
     const byCategory = (cat) => S.visibleProjects.filter((p) => p.category === cat);
 
     const NAV = [
-        ...Object.values(S.categories).map((c) => [c.label, c.path]),
-        [t('festival'), '/festival/'],
-        [t('contact'), '/contact/'],
+        ...Object.values(S.categories).map((c) => [c.label, P(c.path)]),
+        [t('festival'), P('/festival/')],
+        [t('contact'), P('/contact/')],
     ];
 
     /* Static page text marked with data-i18n="key" */
     function translateStatic() {
         $$('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
         $$('[data-i18n-label]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nLabel)));
-        const desc = $('meta[name="description"]');
-        if (desc) desc.content = t('description');
+        $$('main a[href^="/"]').forEach((a) => a.setAttribute('href', P(a.getAttribute('href'))));
     }
 
     const langSwitch = () => `
         <div class="lang" role="group" aria-label="${t('language')}">
-            ${L.langs.map((l) => `<button type="button" data-lang="${l}" aria-pressed="${l === L.lang}">${l.toUpperCase()}</button>`).join('<span aria-hidden="true">/</span>')}
+            ${L.langs.map((l) => `<a href="${esc(L.switchUrl(l))}" hreflang="${l}" lang="${l}" data-lang="${l}"${l === L.lang ? ' aria-current="true"' : ''}>${l.toUpperCase()}</a>`).join('<span aria-hidden="true">/</span>')}
         </div>`;
 
     /* ------------------------------------------------------------------
@@ -57,22 +59,22 @@
 
     function renderChrome() {
         const here = location.pathname.replace(/index\.html$/, '');
-        const currentCat = page === 'project' ? (S.bySlug(new URLSearchParams(location.search).get('p')) || {}).category : null;
-        const isCurrent = (href) => here === href || (currentCat && S.categories[currentCat].path === href);
+        const currentCat = page === 'project' ? (S.bySlug(currentSlug()) || {}).category : null;
+        const isCurrent = (href) => here === href || (currentCat && P(S.categories[currentCat].path) === href);
 
         document.body.insertAdjacentHTML('afterbegin', `
             <header class="nav">
-                <a class="nav__logo scramble" href="/" data-text="${esc(S.name)}">${esc(S.name)}</a>
+                <a class="nav__logo scramble" href="${P('/')}" data-text="${esc(S.name)}">${esc(S.name)}</a>
                 <div class="nav__right">
                     <ul class="nav__links">
-                        ${NAV.filter(([, href]) => href !== '/contact/').map(([label, href]) => `<li><a class="scramble" href="${href}" data-text="${label}"${isCurrent(href) ? ' aria-current="page"' : ''}>${label}</a></li>`).join('')}
+                        ${NAV.filter(([, href]) => href !== P('/contact/')).map(([label, href]) => `<li><a class="scramble" href="${href}" data-text="${label}"${isCurrent(href) ? ' aria-current="page"' : ''}>${label}</a></li>`).join('')}
                     </ul>
                     ${langSwitch()}
                     <button class="nav__toggle" type="button" aria-label="${t('menu')}" aria-expanded="false"><span></span><span></span></button>
                 </div>
             </header>
             <div class="nav-cta">
-                <a class="nav-cta__btn" href="/contact/"${isCurrent('/contact/') ? ' aria-current="page"' : ''}>
+                <a class="nav-cta__btn" href="${P('/contact/')}"${isCurrent(P('/contact/')) ? ' aria-current="page"' : ''}>
                     <i aria-hidden="true"></i><span class="scramble" data-text="${t('contact')}">${t('contact')}</span>
                 </a>
             </div>
@@ -113,7 +115,8 @@
         window.addEventListener('scroll', onScroll, { passive: true });
         onScroll();
 
-        $$('.lang button').forEach((b) => b.addEventListener('click', () => L.set(b.dataset.lang)));
+        // Remember an explicit choice so the next visit opens in that language
+        $$('.lang a').forEach((a) => a.addEventListener('click', () => L.remember(a.dataset.lang)));
 
         const toggle = $('.nav__toggle');
         toggle.addEventListener('click', () => {
@@ -309,8 +312,9 @@
         const featured = S.featured.map(S.bySlug).filter(Boolean);
         const counts = Object.fromEntries(Object.keys(S.categories).map((c) => [c, byCategory(c).length]));
 
-        document.title = `${S.name} — ${S.role}`;
-        $('#hero-video').src = `${S.mediaBase}/reel.mp4`;
+        const reel = $('#hero-video');
+        reel.poster = S.media('nemesis', 'poster.jpg');
+        reel.src = `${S.mediaBase}/reel.mp4`;
         $('#hero-lead').textContent = S.tagline;
         $('#hero-title').textContent = S.role;
 
@@ -325,13 +329,13 @@
         $('#about-facts').innerHTML = `
             <div><dt class="eyebrow">${t('basedIn')}</dt><dd>${esc(S.contact.city)}</dd></div>
             <div><dt class="eyebrow">${t('films')}</dt><dd>${t('projectsCount', { n: S.visibleProjects.length })}</dd></div>
-            <div><dt class="eyebrow">${t('contact')}</dt><dd><a class="link-arrow" href="/contact/">${t('getInTouch')} &#8599;</a></dd></div>`;
+            <div><dt class="eyebrow">${t('contact')}</dt><dd><a class="link-arrow" href="${P('/contact/')}">${t('getInTouch')} &#8599;</a></dd></div>`;
 
         const slicePick = { commercials: 'charmail', fiction: 'l-ombre-des-champs', 'music-video': 'mandat-de-depot' };
         $('#slices').innerHTML = Object.entries(S.categories).map(([key, c]) => {
             const p = S.bySlug(slicePick[key]) || byCategory(key)[0];
             return `
-                <a class="slice" href="${c.path}">
+                <a class="slice" href="${P(c.path)}">
                     ${p ? `<img src="${S.media(p.slug, 'poster.jpg')}" alt="" loading="lazy"><video muted loop playsinline preload="none" data-src="${S.media(p.slug, 'preview.mp4')}"></video>` : ''}
                     <div class="slice__label"><h3 class="display">${c.label}<sup>${counts[key]}</sup></h3><span aria-hidden="true">&#8599;</span></div>
                 </a>`;
@@ -398,7 +402,6 @@
         const key = document.body.dataset.category;
         const cat = S.categories[key];
         const items = byCategory(key);
-        document.title = `${cat.label} — ${S.name}`;
         $('#cat-blurb').textContent = cat.blurb || '';
         $('#cat-title').innerHTML = `<span id="cat-name">${esc(cat.label)}</span><sup>${items.length}</sup>`;
 
@@ -470,13 +473,13 @@
     }
 
     function project() {
-        const p = S.bySlug(new URLSearchParams(location.search).get('p'));
-        if (!p) { location.replace('/'); return; }
+        const p = S.bySlug(currentSlug());
+        if (!p) { location.replace(P('/')); return; }
+        if (!location.pathname.includes(`/project/${p.slug}`)) { location.replace(projectUrl(p)); return; }
         const cat = S.categories[p.category];
         const portrait = p.ratio === '9/16';
-        document.title = `${p.title} — ${S.name}`;
 
-        $('#back').href = cat.path;
+        $('#back').href = P(cat.path);
         $('#back').innerHTML = `<span aria-hidden="true">&#8592;</span> ${esc(cat.label)}`;
         $('#back').dataset.text = `← ${cat.label}`;
         $('#title').textContent = p.title;
@@ -551,7 +554,6 @@
 
     function festival() {
         const list = S.festivals || [];
-        document.title = `${t('festival')} — ${S.name}`;
         $('#fest-title').textContent = t('festival');
         const title = splitChars($('#fest-title'));
         if (list.length) {
@@ -570,7 +572,7 @@
                     <div>
                         <p class="display">${t('festEmpty')}</p>
                         <p>${t('festMeanwhile')}</p>
-                        <p style="margin-top:28px"><a class="link-arrow" href="/fiction/">Fiction &#8594;</a></p>
+                        <p style="margin-top:28px"><a class="link-arrow" href="${P('/fiction/')}">Fiction &#8594;</a></p>
                     </div>
                 </div>`;
         }
@@ -582,7 +584,6 @@
 
     function contact() {
         const c = S.contact;
-        document.title = `${t('contact')} — ${S.name}`;
         $('#contact-video').src = `${S.mediaBase}/reel.mp4`;
 
         $('#contact-title').innerHTML = `<span class="line-mask"><span>${esc(t('sayHello'))}</span></span>`;

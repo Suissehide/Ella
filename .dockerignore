@@ -1,0 +1,6 @@
+.git
+.idea
+assets
+dist
+src/media
+**/.DS_Store
