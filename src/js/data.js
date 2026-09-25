@@ -36,10 +36,9 @@
             city: 'Paris / Bordeaux',
         },
 
-        // TODO: rewrite in Ella's own words
         about: {
-            en: 'I’m a cinematographer, camera assistant and editor. I move between fiction, commercials and music videos with the same care for every shot: a strong image, a sincere emotion and a rhythm that holds until the very last frame.',
-            fr: 'Je suis cheffe opératrice, assistante caméra et monteuse. Je passe de la fiction à la publicité et au clip avec la même exigence pour chaque plan : une image forte, une émotion sincère et un rythme qui tient jusqu’à la dernière seconde.',
+            en: 'Image is at the heart of my work. As a cinematographer, I follow each project from the shoot through to the edit, driven by one desire: telling stories through images that are sensitive and meaningful.',
+            fr: 'L’image est au cœur de mon travail. Cheffe opératrice, j’accompagne chaque projet du tournage jusqu’au montage, guidée par une même envie : raconter des histoires à travers des images sensibles et porteuses de sens.',
         },
 
         categories: {
