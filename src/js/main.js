@@ -318,7 +318,7 @@
         $('#hero-lead').textContent = S.tagline;
         $('#hero-title').textContent = S.role;
 
-        $('#mosaic').innerHTML = featured.map((p, i) => tileHTML(p, i === 0 || i === 4 ? 'tile--xl' : '')).join('');
+        $('#mosaic').innerHTML = featured.map((p, i) => tileHTML(p, i === 0 || i >= 4 ? 'tile--xl' : '')).join('');
 
         const marqueeItems = S.visibleProjects.map((p) => `<a href="${projectUrl(p)}">${esc(p.title)}</a>`).join('');
         $('#marquee').innerHTML = marqueeItems + marqueeItems;

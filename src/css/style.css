@@ -477,8 +477,8 @@ body.menu-open { overflow: hidden; }
 }
 .link-arrow:hover { color: var(--accent); border-color: var(--accent); }
 
-/* Mosaic: 6 columns, 5 tiles, fully interlocked
-   rows 1-2: 4x2 + 2x2 | rows 3-4: 3x2 + 3x2 | rows 5-6: 6x2 */
+/* Mosaic: 6 columns, 6 tiles, fully interlocked
+   rows 1-2: 4x2 + 2x2 | rows 3-4: 3x2 + 3x2 | rows 5-6: 6x2 | rows 7-8: 6x2 */
 .mosaic {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -491,6 +491,7 @@ body.menu-open { overflow: hidden; }
 .mosaic > :nth-child(3) { grid-column: span 3; grid-row: span 2; }
 .mosaic > :nth-child(4) { grid-column: span 3; grid-row: span 2; }
 .mosaic > :nth-child(5) { grid-column: span 6; grid-row: span 2; }
+.mosaic > :nth-child(6) { grid-column: span 6; grid-row: span 2; }
 
 @media (max-width: 760px) {
     .mosaic { grid-template-columns: 1fr; grid-auto-rows: auto; }

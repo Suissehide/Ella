@@ -176,7 +176,7 @@
         ],
 
         // Home page mosaic, in order (6-column grid, see css .mosaic)
-        featured: ['nemesis', 'daniel-wellington', 'le-caprice', 'charmail', 'mandat-de-depot'],
+        featured: ['mandat-de-depot', 'le-caprice', 'daniel-wellington', 'nemesis', 'l-ombre-des-champs', 'charmail'],
 
         /*
          * Festival selections and awards.
