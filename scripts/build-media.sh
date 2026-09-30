@@ -72,4 +72,25 @@ if [ ! -f "$OUT/reel.mp4" ]; then
   ffmpeg -v error -y -f concat -safe 0 -i "$list" -c copy -movflags +faststart "$OUT/reel.mp4"
   rm -f "$OUT"/_cut-*.mp4 "$list"
 fi
+# Photos: assets/projects/photos/<folder> -> photos/<series>/NN.jpg (2400px) + NN-sm.jpg (1000px),
+# numbered in file-name order. Portrait shots are listed per series in data.js (photos.portrait).
+PHOTOS=(
+  "concerts|Photo-concert"
+  "documentaire|Photos-docu"
+  "charmail|Photo-Charmail"
+  "daniel-wellington|Photos-D-Wellington"
+)
+for entry in "${PHOTOS[@]}"; do
+  IFS='|' read -r series folder <<< "$entry"; dir="$OUT/photos/$series"
+  mkdir -p "$dir"
+  i=0
+  while IFS= read -r in; do
+    i=$((i+1)); n=$(printf %02d "$i")
+    IFS=x read -r w h < <(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$in")
+    [ "$h" -gt "$w" ] && echo "   $series $n portrait"
+    [ -f "$dir/$n.jpg" ] || ffmpeg -v error -y -i "$in" -vf "$(scale_filter "$w" "$h" 2400)" -q:v 3 "$dir/$n.jpg"
+    [ -f "$dir/$n-sm.jpg" ] || ffmpeg -v error -y -i "$in" -vf "$(scale_filter "$w" "$h" 1000)" -q:v 4 "$dir/$n-sm.jpg"
+  done < <(find "$SRC/photos/$folder" -maxdepth 1 -iname '*.jp*g' | LC_ALL=C sort)
+done
+
 du -sh "$OUT"/*

@@ -1,6 +1,6 @@
 /* ==========================================================================
    Ella Couffinhal — site script
-   Pages declare themselves with <body data-page="home|category|project|festival|contact">
+   Pages declare themselves with <body data-page="home|category|project|festival|photos|contact">
    ========================================================================== */
 (function () {
     const S = window.SITE;
@@ -38,6 +38,7 @@
     const NAV = [
         ...Object.values(S.categories).map((c) => [c.label, P(c.path)]),
         [t('festival'), P('/concerts/')],
+        [t('photos'), P('/photos/')],
         [t('contact'), P('/contact/')],
     ];
 
@@ -268,6 +269,102 @@
     }
 
     /* ------------------------------------------------------------------
+       Photos: series grid and full-screen viewer
+       ------------------------------------------------------------------ */
+
+    const isPortrait = (series, n) => (S.photoSeries(series).portrait || []).includes(n);
+    // '16/9' -> '16/9' for landscape shots, '9/16' for upright ones
+    const shotRatio = (series, n) => (isPortrait(series, n) ? S.photoSeries(series).ratio.split('/').reverse().join('/') : S.photoSeries(series).ratio);
+    const photoAlt = (series, n) => `${S.photoSeries(series).title} — ${t('photo')} ${n}`;
+
+    /* Figures for a list of [series, n]; each one opens the viewer on that list */
+    function shotsHTML(shots) {
+        return shots.map(([series, n], i) => `
+            <figure class="shot" style="aspect-ratio:${shotRatio(series, n)}">
+                <button type="button" data-shot="${i}" aria-label="${esc(photoAlt(series, n))}">
+                    <img src="${S.photo(series, n, true)}" alt="${esc(photoAlt(series, n))}" loading="lazy">
+                </button>
+            </figure>`).join('');
+    }
+
+    let viewer = null;
+    function openViewer(shots, index) {
+        if (!viewer) {
+            document.body.insertAdjacentHTML('beforeend', `
+                <dialog class="viewer" aria-label="${t('photos')}">
+                    <img alt="">
+                    <div class="viewer__bar mono"><span class="viewer__caption"></span><span class="viewer__count"></span></div>
+                    <button type="button" class="viewer__close mono" data-go="close">${t('close')}</button>
+                    <button type="button" class="viewer__prev" data-go="-1" aria-label="${t('previous')}">&#8592;</button>
+                    <button type="button" class="viewer__next" data-go="1" aria-label="${t('next')}">&#8594;</button>
+                </dialog>`);
+            const dialog = $('.viewer');
+            const img = $('img', dialog);
+            viewer = { dialog, shots: [], i: 0 };
+            viewer.show = (i) => {
+                const { shots: list } = viewer;
+                viewer.i = (i + list.length) % list.length;
+                const [series, n] = list[viewer.i];
+                img.src = S.photo(series, n);
+                img.alt = photoAlt(series, n);
+                $('.viewer__caption', dialog).textContent = S.photoSeries(series).title;
+                $('.viewer__count', dialog).textContent = `${String(viewer.i + 1).padStart(2, '0')} / ${String(list.length).padStart(2, '0')}`;
+                // Preload the neighbours so arrows feel instant
+                [1, -1].forEach((d) => { const [s2, n2] = list[(viewer.i + d + list.length) % list.length]; new Image().src = S.photo(s2, n2); });
+            };
+            dialog.addEventListener('click', (e) => {
+                const go = e.target.closest('[data-go]');
+                if (go) return go.dataset.go === 'close' ? dialog.close() : viewer.show(viewer.i + Number(go.dataset.go));
+                if (e.target === dialog || e.target === img) dialog.close();
+            });
+            dialog.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight') viewer.show(viewer.i + 1);
+                if (e.key === 'ArrowLeft') viewer.show(viewer.i - 1);
+            });
+            dialog.addEventListener('close', () => lockScroll(false));
+        }
+        viewer.shots = shots;
+        viewer.show(index);
+        viewer.dialog.showModal();
+        lockScroll(true);
+    }
+
+    /* Clicking a [data-shot] inside root opens the viewer on shots */
+    function bindShots(root, shots) {
+        root.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-shot]');
+            if (b) openViewer(shots, Number(b.dataset.shot));
+        });
+    }
+
+    /* One block per series: title, link to the film, photos */
+    function renderSeries(root, list) {
+        root.innerHTML = list.map((s) => {
+            const film = s.project && S.bySlug(s.project);
+            return `
+                <section class="series" id="${s.slug}">
+                    <div class="series__head">
+                        <h2 class="display line-mask"><span>${esc(s.title)}<sup>${s.count}</sup></span></h2>
+                        ${film ? `<a class="link-arrow" href="${projectUrl(film)}">${t('seeFilm')} &#8594;</a>` : ''}
+                    </div>
+                    <div class="shots"></div>
+                </section>`;
+        }).join('');
+        list.forEach((s) => {
+            const shots = Array.from({ length: s.count }, (_, i) => [s.slug, i + 1]);
+            const grid = $(`#${s.slug} .shots`, root);
+            grid.innerHTML = shotsHTML(shots);
+            bindShots(grid, shots);
+        });
+        if (hasGsap && !reduced) {
+            $$('.shot', root).forEach((f) => {
+                gsap.from(f, { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: f, start: 'top 95%' } });
+            });
+        }
+        revealLines(root);
+    }
+
+    /* ------------------------------------------------------------------
        Motion helpers
        ------------------------------------------------------------------ */
 
@@ -333,15 +430,27 @@
             <div><dt class="eyebrow">${t('films')}</dt><dd>${t('projectsCount', { n: S.visibleProjects.length })}</dd></div>
             <div><dt class="eyebrow">${t('contact')}</dt><dd><a class="link-arrow" href="${P('/contact/')}">${t('getInTouch')} &#8599;</a></dd></div>`;
 
+        const strip = S.featuredPhotos.filter(([series]) => S.photoSeries(series));
+        $('#strip').innerHTML = shotsHTML(strip);
+        bindShots($('#strip'), strip);
+
         const slicePick = { commercials: 'charmail', fiction: 'l-ombre-des-champs', 'music-video': 'mandat-de-depot' };
-        $('#slices').innerHTML = Object.entries(S.categories).map(([key, c]) => {
-            const p = S.bySlug(slicePick[key]) || byCategory(key)[0];
-            return `
-                <a class="slice" href="${P(c.path)}">
-                    ${p ? `<img src="${S.media(p.slug, 'poster.jpg')}" alt="" loading="lazy"><video muted loop playsinline preload="none" data-src="${S.media(p.slug, 'preview.mp4')}"></video>` : ''}
-                    <div class="slice__label"><h3 class="display">${c.label}<sup>${counts[key]}</sup></h3><span aria-hidden="true">&#8599;</span></div>
-                </a>`;
-        }).join('');
+        const slice = (href, label, count, media) => `
+            <a class="slice" href="${href}">
+                ${media}
+                <div class="slice__label"><h3 class="display">${label}<sup>${count}</sup></h3><span aria-hidden="true">&#8599;</span></div>
+            </a>`;
+        const concerts = S.photoSeries('concerts');
+        const photoCount = S.photos.reduce((n, s) => n + s.count, 0);
+        const coverImg = (s) => `<img src="${S.photo(s.slug, s.cover, true)}" alt="" loading="lazy">`;
+        $('#slices').innerHTML = [
+            ...Object.entries(S.categories).map(([key, c]) => {
+                const p = S.bySlug(slicePick[key]) || byCategory(key)[0];
+                return slice(P(c.path), c.label, counts[key], p ? `<img src="${S.media(p.slug, 'poster.jpg')}" alt="" loading="lazy"><video muted loop playsinline preload="none" data-src="${S.media(p.slug, 'preview.mp4')}"></video>` : '');
+            }),
+            concerts && slice(P('/concerts/'), t('festival'), concerts.count, coverImg(concerts)),
+            slice(P('/photos/'), t('photos'), photoCount, coverImg(S.photoSeries('documentaire') || S.photos[0])),
+        ].filter(Boolean).join('');
         $$('.slice').forEach((s) => {
             const v = $('video', s);
             if (!v) return;
@@ -363,11 +472,26 @@
             gsap.to('.hero__inner', { yPercent: -30, opacity: 0, ease: 'none', scrollTrigger: cover });
             gsap.to('.hero__video', { scale: 1.08, filter: 'brightness(0.35)', ease: 'none', scrollTrigger: cover });
             gsap.to('.viewfinder', { opacity: 0, ease: 'none', scrollTrigger: { ...cover, end: 'top 40%' } });
+            photoStrip();
             gsap.from('.slice', {
                 yPercent: 12, opacity: 0, stagger: 0.1, duration: 1.2, ease: 'expo.out',
                 scrollTrigger: { trigger: '#slices', start: 'top 85%' },
             });
         }
+    }
+
+    /* Home photo strip: pinned while it slides sideways (wide screens); touch and narrow screens swipe it */
+    function photoStrip() {
+        const track = $('#strip');
+        gsap.matchMedia().add('(min-width: 761px)', () => {
+            const distance = () => track.scrollWidth - window.innerWidth;
+            gsap.to(track, {
+                x: () => -distance(), ease: 'none',
+                scrollTrigger: { trigger: '#photo-strip', start: 'top top', end: () => `+=${distance()}`, pin: true, scrub: 0.6, invalidateOnRefresh: true },
+            });
+        });
+        // Photos load lazily: widths settle once they have, so measure again
+        $$('img', track).forEach((img) => img.addEventListener('load', () => ScrollTrigger.refresh(), { once: true }));
     }
 
     /* Home marquee: the band slows down under the cursor and the hovered film's still follows it.
@@ -636,6 +760,9 @@
                     <span class="fest__award">${esc(f.award || t('officialSelection'))}</span>
                 </li>`;
             }).join('')}</ul>`;
+        } else if (S.photoSeries('concerts')) {
+            renderSeries($('#fest'), [S.photoSeries('concerts')]);
+            $('#fest .series__head').remove();
         } else {
             $('#fest').innerHTML = `
                 <div class="empty">
@@ -650,6 +777,18 @@
             gsap.from(title, { yPercent: 110, duration: 1.2, stagger: 0.04, ease: 'expo.out', delay: 0.3 });
             gsap.from('#fest li, #fest .empty', { y: 30, opacity: 0, stagger: 0.06, duration: 1, ease: 'expo.out', delay: 0.5 });
         }
+    }
+
+    function photos() {
+        const title = splitChars($('#photos-title'));
+        $('#series-nav').innerHTML = S.photos.map((s) => `<a class="link-arrow" href="#${s.slug}">${esc(s.title)}</a>`).join('');
+        $$('#series-nav a').forEach((a) => a.addEventListener('click', (e) => {
+            if (!lenis) return;
+            e.preventDefault();
+            lenis.scrollTo(a.getAttribute('href'), { offset: -80 });
+        }));
+        renderSeries($('#photos'), S.photos);
+        if (hasGsap && !reduced) gsap.from(title, { yPercent: 110, duration: 1.2, stagger: 0.04, ease: 'expo.out', delay: 0.3 });
     }
 
     function contact() {
@@ -714,7 +853,7 @@
     smoothScroll();
     runTimecodes();
 
-    ({ home, category, project, festival, contact })[page]?.();
+    ({ home, category, project, festival, photos, contact })[page]?.();
 
     revealLines($('footer') || document.createElement('div'));
     if (page === 'home') revealLines($('#about'));

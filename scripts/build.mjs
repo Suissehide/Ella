@@ -67,6 +67,7 @@ function pagesFor(S) {
         { key: 'home', template: 'index.html', path: '/' },
         ...Object.entries(S.categories).map(([cat, c]) => ({ key: 'category', cat, template: `${cat}/index.html`, path: c.path })),
         { key: 'festival', template: 'concerts/index.html', path: '/concerts/' },
+        { key: 'photos', template: 'photos/index.html', path: '/photos/' },
         { key: 'contact', template: 'contact/index.html', path: '/contact/' },
         ...S.visibleProjects.map((p) => ({ key: 'project', project: p, template: 'project/index.html', path: `/project/${p.slug}/` })),
         // Generic project page: only there to redirect old /project/?p=<slug> links
@@ -145,9 +146,11 @@ function seoFor(page, S, L, lang) {
                 contentUrl: S.media(p.slug, 'film.mp4'),
                 url: url(page.path),
                 inLanguage: lang,
-                director: person,
                 creator: person,
             };
+            // Director from the credits: Ella herself, someone else, or unknown
+            const [, directorName] = (p.credits || []).find(([role]) => role === S.directorRole) || [];
+            if (directorName) video.director = directorName === S.name ? person : { '@type': directorName.includes('Production') ? 'Organization' : 'Person', name: directorName };
             if (p.duration) video.duration = isoDuration(p.duration);
             if (p.year) video.uploadDate = `${p.year}-01-01`;
             if (p.client) video.sponsor = { '@type': 'Organization', name: p.client };
@@ -162,8 +165,32 @@ function seoFor(page, S, L, lang) {
                 },
             };
         }
-        case 'festival':
-            return { title: t('seoFestivalTitle'), description: t('festBlurb'), image: defaultImage };
+        case 'festival': {
+            const s = S.photoSeries('concerts');
+            return { title: t('seoFestivalTitle'), description: t('festBlurb'), image: s ? { url: S.photo(s.slug, s.cover) } : defaultImage };
+        }
+        case 'photos': {
+            const s = S.photos[0];
+            return {
+                title: t('seoPhotosTitle'),
+                description: `${t('photosBlurb')} ${S.photos.map((x) => x.title).join(', ')}.`,
+                image: { url: S.photo(s.slug, s.cover) },
+                jsonld: {
+                    '@context': 'https://schema.org',
+                    '@graph': [
+                        {
+                            '@type': 'ImageGallery',
+                            name: t('photos'),
+                            url: url(page.path),
+                            inLanguage: lang,
+                            author: person,
+                            image: S.photos.flatMap((x) => Array.from({ length: x.count }, (_, i) => S.photo(x.slug, i + 1))),
+                        },
+                        crumbs([[S.name, '/'], [t('photos'), page.path]]),
+                    ],
+                },
+            };
+        }
         case 'contact':
             return { title: t('seoContactTitle'), description: t('seoContactDesc'), image: defaultImage };
         case 'project-redirect':
@@ -239,6 +266,9 @@ function prefill(html, page, S, L, lang) {
         if (p.description) html = fill('info', `<p class="info__desc">${esc(p.description)}</p>`);
     }
     if (page.key === 'festival') html = fill('fest-title', esc(t('festival')));
+    if (page.key === 'photos') {
+        html = fill('series-nav', S.photos.map((x) => `<a class="link-arrow" href="#${x.slug}">${esc(x.title)}</a>`).join(''));
+    }
     return html;
 }
 

@@ -14,6 +14,8 @@
     const SHORT = { en: 'Short film', fr: 'Court métrage' };
     const COMMERCIAL = { en: 'Commercial', fr: 'Publicité' };
     const DIRECTOR = { en: 'Director', fr: 'Réalisation' };
+    const DOP = { en: 'Cinematographer', fr: 'Cheffe opératrice' };
+    const FIRST_AC = { en: '1st camera assistant', fr: '1re assistante caméra' };
 
     const SITE = {
         // Public address of the site, used for canonical URLs, the sitemap and social previews
@@ -23,7 +25,9 @@
         mediaBase: isLocal ? '/media' : 'https://s3.qwetle.fr/ella',
 
         name: 'Ella Couffinhal',
-        role: { en: 'Cinematographer', fr: 'Cheffe opératrice' },
+        role: DOP,
+        // Credit label for the director, read by the build to fill the films' structured data
+        directorRole: DIRECTOR,
         tagline: { en: 'Fiction, commercials & music videos', fr: 'Fiction, publicités & clips' },
 
         contact: {
@@ -44,7 +48,7 @@
         categories: {
             fiction: {
                 label: { en: 'Fiction', fr: 'Fictions' },
-                blurb: { en: 'My short films, a series pilot and a documentary.', fr: 'Mes courts métrages, un pilote de série et un documentaire.' },
+                blurb: { en: 'The short films, series pilot and documentary I’ve worked on.', fr: 'Les courts métrages, le pilote de série et le documentaire sur lesquels j’ai travaillé.' },
                 path: '/fiction/',
             },
             commercials: {
@@ -74,8 +78,11 @@
                 year: '',
                 duration: 58,
                 ratio: '16/9',
-                description: { en: '', fr: '' },
-                credits: [[DIRECTOR, 'Ella Couffinhal']],
+                description: {
+                    en: 'Six agroforestry and film students spent three months in the Dominican Republic and Cuba making a documentary about coffee and cocoa growing in the tropics.',
+                    fr: 'Six étudiants en agroforesterie et en audiovisuel sont partis trois mois en République dominicaine et à Cuba pour réaliser un documentaire sur la production de café et de cacao en milieu tropical.',
+                },
+                credits: [[{ en: 'Director, cinematographer & editor', fr: 'Réalisation, image et montage' }, 'Ella Couffinhal']],
             },
             {
                 slug: 'nemesis',
@@ -85,8 +92,11 @@
                 year: '',
                 duration: 139,
                 ratio: '2.22/1',
-                description: { en: '', fr: '' },
-                credits: [[DIRECTOR, 'Ella Couffinhal']],
+                description: {
+                    en: 'Made for the Nikon Film Festival, on the theme “Superpower”. A violent argument breaks out between Théo and Victoria. Théo tells her he is leaving. Devastated, Victoria fights back her tears, but anger takes over. Broken yet resolute, she loses her footing. As words fly and emotions run wild, the situation spirals completely out of control.',
+                    fr: 'Réalisé dans le cadre du Nikon Festival, sur le thème « Super-pouvoir ». Une violente dispute éclate entre Théo et Victoria. Théo annonce qu’il la quitte. Victoria, dévastée, lutte contre ses larmes, mais c’est la colère qui finit par prendre le dessus. Brisée, mais résolue, elle perd pied. Alors que les mots fusent et que les émotions se déchaînent, la situation échappe complètement à tout contrôle.',
+                },
+                credits: [[DIRECTOR, 'Anna Chabot'], [DOP, 'Ella Couffinhal']],
             },
             {
                 slug: 'l-ombre-des-champs',
@@ -96,8 +106,11 @@
                 year: '',
                 duration: 955,
                 ratio: '2.2/1',
-                description: { en: '', fr: '' },
-                credits: [[DIRECTOR, 'Ella Couffinhal']],
+                description: {
+                    en: 'A small village in western France is struck by a wolf attack: a huge black stray wolf has just gone after a young boy. Gonzague, an army officer on leave in the village, is forced by circumstance to organise a hunt for the wolf, drawing on his soldier’s skills, in a village torn between growing terror and human divisions.',
+                    fr: 'Un petit village de l’Ouest de la France est frappé par une attaque de loup : un énorme loup noir errant vient de s’en prendre à un jeune garçon. Gonzague, officier en congé dans le village, est, par la force des choses, amené à organiser une traque du loup en mettant à profit ses qualités de soldat, dans un village déchiré entre la terreur grandissante et les divisions humaines.',
+                },
+                credits: [[DIRECTOR, 'Bernard de Lagarde Montlezun'], [{ en: '1st camera assistant (+ electrics)', fr: '1re assistante caméra (+ électro)' }, 'Ella Couffinhal']],
             },
             {
                 slug: 'contre-soiree',
@@ -107,8 +120,11 @@
                 year: '',
                 duration: 560,
                 ratio: '2.35/1',
-                description: { en: '', fr: '' },
-                credits: [[DIRECTOR, 'Ella Couffinhal']],
+                description: {
+                    en: 'Oscar is celebrating his birthday surrounded by his friends and the party is in full swing. Yet in the privacy of the rooms next door, away from the noise of the party, truths come out that threaten to upset the apparent harmony.',
+                    fr: 'Oscar célèbre son anniversaire entouré de ses amis et la soirée bat son plein. Pourtant, dans l’intimité des pièces adjacentes, loin de l’agitation de la fête, des vérités se dévoilent, menaçant de bouleverser l’harmonie apparente.',
+                },
+                credits: [[{ en: 'Script supervisor, producer & unit manager', fr: 'Scripte, production et régie' }, 'Ella Couffinhal']],
             },
             {
                 slug: 'les-magnetiques',
@@ -118,7 +134,10 @@
                 year: '',
                 duration: 413,
                 ratio: '16/9',
-                description: { en: '', fr: '' },
+                description: {
+                    en: 'A remake of a scene from Vincent Maël Cardona’s film “Les Magnétiques”.',
+                    fr: 'Un remake d’une scène du film « Les Magnétiques » de Vincent Maël Cardona.',
+                },
                 credits: [[DIRECTOR, 'Ella Couffinhal']],
             },
             {
@@ -130,7 +149,7 @@
                 duration: 373,
                 ratio: '16/9',
                 description: { en: '', fr: '' },
-                credits: [[DIRECTOR, 'Ella Couffinhal']],
+                credits: [[DIRECTOR, 'Cécile Boulevard'], [FIRST_AC, 'Ella Couffinhal']],
             },
             {
                 slug: 'charmail',
@@ -153,8 +172,11 @@
                 year: '',
                 duration: 183,
                 ratio: '3/2',
-                description: { en: '', fr: '' },
-                credits: [[DIRECTOR, 'Ella Couffinhal']],
+                description: {
+                    en: 'Music video for Lagui and Jul, directed by Bien Vu Production.',
+                    fr: 'Clip pour Lagui et Jul, réalisé par Bien Vu Production.',
+                },
+                credits: [[DIRECTOR, 'Bien Vu Production'], [{ en: '2nd camera assistant', fr: '2nde assistante caméra' }, 'Ella Couffinhal']],
             },
             {
                 slug: 'daniel-wellington',
@@ -184,6 +206,23 @@
          *   award: { en: 'Live', fr: 'Live' } }
          */
         festivals: [],
+
+        /*
+         * Photo series, generated by scripts/build-media.sh into assets/media/photos/<slug>/NN.jpg
+         * (numbered in the source file-name order). ratio: landscape shape (upright shots use it turned).
+         * portrait: numbers of the upright shots.
+         * cover: shot used for the series on the home page and in Explore.
+         * project: slug of the matching film, linked under the series title.
+         */
+        photos: [
+            { slug: 'concerts', ratio: '16/9', title: { en: 'Concerts', fr: 'Concerts' }, count: 11, portrait: [4], cover: 8 },
+            { slug: 'documentaire', ratio: '3/2', title: { en: 'Documentary', fr: 'Documentaire' }, project: 'le-caprice', count: 10, portrait: [1, 2, 3, 4, 5, 9, 10], cover: 4 },
+            { slug: 'charmail', ratio: '16/9', title: 'Charmail', project: 'charmail', count: 6, portrait: [1], cover: 5 },
+            { slug: 'daniel-wellington', ratio: '16/9', title: 'Daniel Wellington', project: 'daniel-wellington', count: 6, portrait: [1, 2, 3, 4, 5, 6], cover: 3 },
+        ],
+
+        // Home page photo strip: [series, shot]
+        featuredPhotos: [['concerts', 1], ['documentaire', 10], ['daniel-wellington', 3], ['concerts', 8], ['documentaire', 7], ['charmail', 5], ['concerts', 10], ['documentaire', 6], ['daniel-wellington', 6], ['concerts', 6]],
     };
 
     // Everything below uses the text of the current language only
@@ -191,6 +230,9 @@
     S.visibleProjects = S.projects.filter((p) => !p.draft);
     S.bySlug = (slug) => S.visibleProjects.find((p) => p.slug === slug);
     S.media = (slug, file) => `${S.mediaBase}/${slug}/${file}`;
+    // photo('concerts', 3) -> .../photos/concerts/03.jpg, photo('concerts', 3, true) -> 03-sm.jpg
+    S.photo = (series, n, small) => `${S.mediaBase}/photos/${series}/${String(n).padStart(2, '0')}${small ? '-sm' : ''}.jpg`;
+    S.photoSeries = (slug) => S.photos.find((s) => s.slug === slug);
 
     // Credit-style runtime, e.g. 6′13″
     S.projects.forEach((p) => {
