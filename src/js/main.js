@@ -275,7 +275,7 @@
     const isPortrait = (series, n) => (S.photoSeries(series).portrait || []).includes(n);
     // '16/9' -> '16/9' for landscape shots, '9/16' for upright ones
     const shotRatio = (series, n) => (isPortrait(series, n) ? S.photoSeries(series).ratio.split('/').reverse().join('/') : S.photoSeries(series).ratio);
-    const photoAlt = (series, n) => `${S.photoSeries(series).title} — ${t('photo')} ${n}`;
+    const photoAlt = (series, n) => t('photoAlt', { series: S.photoSeries(series).title, n, name: S.name });
 
     /* Figures for a list of [series, n]; each one opens the viewer on that list */
     function shotsHTML(shots) {

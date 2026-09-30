@@ -27,6 +27,10 @@ const DIST = path.join(ROOT, 'dist');
 const LANGS = ['fr', 'en'];
 const DEFAULT_LANG = 'fr';
 const OG_LOCALE = { fr: 'fr_FR', en: 'en_US' };
+// Date the films went online (uploadDate, required by Google for video results)
+const VIDEOS_ONLINE = '2026-09-24';
+// Stills generated per film (scripts/build-media.sh)
+const STILLS = 6;
 
 const esc = (str = '') => String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const rich = (str) => esc(str).replace(/\*(.+?)\*/g, '<em>$1</em>');
@@ -51,6 +55,25 @@ function loadContent(lang) {
     }
     return { S: sandbox.SITE, L: sandbox.I18N };
 }
+
+/* Cuts a meta description to what search results show (~160 characters), on a word boundary */
+const clip = (str, max = 160) => {
+    str = str.replace(/\s+/g, ' ').trim();
+    if (str.length <= max) return str;
+    return `${str.slice(0, max - 1).replace(/[\s,;:.—–-]+\S*$/, '')}…`;
+};
+
+/* Ella's credit on a project and its director, from the credits */
+const projectPeople = (p, S) => {
+    const credits = p.credits || [];
+    return {
+        role: (credits.find(([, name]) => name === S.name) || [])[0],
+        director: (credits.find(([role]) => role === S.directorRole) || [])[1],
+    };
+};
+
+/* Every photo of a series, full size */
+const seriesPhotos = (S, s) => Array.from({ length: s.count }, (_, i) => S.photo(s.slug, i + 1));
 
 /* PT2M19S */
 const isoDuration = (sec) => `PT${Math.floor(sec / 60)}M${Math.round(sec % 60)}S`;
@@ -136,8 +159,14 @@ function seoFor(page, S, L, lang) {
         case 'project': {
             const p = page.project;
             const c = S.categories[p.category];
-            const client = p.client && p.client !== p.title ? ` (${p.client})` : '';
-            const description = p.description || t('seoProjectDesc', { title: p.title, type: lcFirst(p.type), client, runtime: p.runtime || '' });
+            const { role, director } = projectPeople(p, S);
+            // Short and specific for results pages: what it is, who directed it, what Ella did, then the synopsis
+            const lead = [
+                director ? t('seoDirectedBy', { type: p.type, director }) : `${p.type}.`,
+                role && !(director === S.name && role === S.directorRole) ? t('seoRoleLine', { role }) : '',
+            ].filter(Boolean).join(' ');
+            const metaDescription = clip(`${lead} ${p.description || (p.runtime ? t('seoProjectDesc', { runtime: p.runtime }) : '')}`);
+            const description = p.description || metaDescription;
             const video = {
                 '@type': 'VideoObject',
                 name: p.title,
@@ -152,11 +181,13 @@ function seoFor(page, S, L, lang) {
             const [, directorName] = (p.credits || []).find(([role]) => role === S.directorRole) || [];
             if (directorName) video.director = directorName === S.name ? person : { '@type': directorName.includes('Production') ? 'Organization' : 'Person', name: directorName };
             if (p.duration) video.duration = isoDuration(p.duration);
-            if (p.year) video.uploadDate = `${p.year}-01-01`;
+            video.uploadDate = p.year ? `${p.year}-01-01` : VIDEOS_ONLINE;
             if (p.client) video.sponsor = { '@type': 'Organization', name: p.client };
             return {
-                title: t('seoProjectTitle', { title: p.title, type: p.type }),
-                description,
+                title: role
+                    ? t('seoProjectRoleTitle', { title: p.title, type: p.type, role: role === S.directorRole ? t('seoDirector') : lcFirst(role) })
+                    : t('seoProjectTitle', { title: p.title, type: p.type }),
+                description: metaDescription,
                 image: { url: S.media(p.slug, 'poster.jpg') },
                 ogType: 'video.other',
                 jsonld: {
@@ -167,13 +198,13 @@ function seoFor(page, S, L, lang) {
         }
         case 'festival': {
             const s = S.photoSeries('concerts');
-            return { title: t('seoFestivalTitle'), description: t('festBlurb'), image: s ? { url: S.photo(s.slug, s.cover) } : defaultImage };
+            return { title: t('seoFestivalTitle'), description: t('seoFestivalDesc'), image: s ? { url: S.photo(s.slug, s.cover) } : defaultImage };
         }
         case 'photos': {
             const s = S.photos[0];
             return {
                 title: t('seoPhotosTitle'),
-                description: `${t('photosBlurb')} ${S.photos.map((x) => x.title).join(', ')}.`,
+                description: t('seoPhotosDesc', { series: S.photos.map((x) => x.title).join(', ') }),
                 image: { url: S.photo(s.slug, s.cover) },
                 jsonld: {
                     '@context': 'https://schema.org',
@@ -184,7 +215,7 @@ function seoFor(page, S, L, lang) {
                             url: url(page.path),
                             inLanguage: lang,
                             author: person,
-                            image: S.photos.flatMap((x) => Array.from({ length: x.count }, (_, i) => S.photo(x.slug, i + 1))),
+                            image: S.photos.flatMap((x) => seriesPhotos(S, x)),
                         },
                         crumbs([[S.name, '/'], [t('photos'), page.path]]),
                     ],
@@ -282,16 +313,27 @@ function renderPage(page, S, L, lang) {
     return prefill(html, page, S, L, lang);
 }
 
+/* Images listed in the sitemap for each page (Google Images) */
+function imagesFor(page, S) {
+    if (page.key === 'project') {
+        const slug = page.project.slug;
+        return [S.media(slug, 'poster.jpg'), ...Array.from({ length: STILLS }, (_, i) => S.media(slug, `still-${i + 1}.jpg`))];
+    }
+    if (page.key === 'photos') return S.photos.flatMap((s) => seriesPhotos(S, s));
+    if (page.key === 'festival') return S.photoSeries('concerts') ? seriesPhotos(S, S.photoSeries('concerts')) : [];
+    return [];
+}
+
 function sitemap(entries, S) {
     const today = new Date().toISOString().slice(0, 10);
-    const urls = entries.map(({ page, image }) => {
+    const urls = entries.map(({ page, images }) => {
         const alts = [...LANGS, 'x-default'].map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${S.siteUrl}${localPath(page.path, l === 'x-default' ? DEFAULT_LANG : l)}"/>`).join('\n');
         return LANGS.map((lang) => [
             '  <url>',
             `    <loc>${S.siteUrl}${localPath(page.path, lang)}</loc>`,
             `    <lastmod>${today}</lastmod>`,
             alts,
-            image ? `    <image:image><image:loc>${esc(image)}</image:loc></image:image>` : '',
+            ...images.map((img) => `    <image:image><image:loc>${esc(img)}</image:loc></image:image>`),
             '  </url>',
         ].filter(Boolean).join('\n')).join('\n');
     }).join('\n');
@@ -351,7 +393,7 @@ function build() {
 
     const indexed = pagesFor(S0).filter((p) => !p.noindex).map((page) => ({
         page,
-        image: page.key === 'project' ? S0.media(page.project.slug, 'poster.jpg') : null,
+        images: imagesFor(page, S0),
     }));
     write(path.join(DIST, 'sitemap.xml'), sitemap(indexed, S0));
     write(path.join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${S0.siteUrl}/sitemap.xml\n`);

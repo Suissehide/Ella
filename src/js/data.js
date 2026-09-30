@@ -48,7 +48,7 @@
         categories: {
             fiction: {
                 label: { en: 'Fiction', fr: 'Fictions' },
-                blurb: { en: 'The short films, series pilot and documentary I’ve worked on.', fr: 'Les courts métrages, le pilote de série et le documentaire sur lesquels j’ai travaillé.' },
+                blurb: { en: 'The short films, film pilot and documentary I’ve worked on.', fr: 'Les courts métrages, le pilote de film et le documentaire sur lesquels j’ai travaillé.' },
                 path: '/fiction/',
             },
             commercials: {
@@ -102,7 +102,7 @@
                 slug: 'l-ombre-des-champs',
                 title: "L'Ombre des champs",
                 category: 'fiction',
-                type: { en: 'Series pilot', fr: 'Pilote de série' },
+                type: { en: 'Film pilot', fr: 'Pilote de film' },
                 year: '',
                 duration: 955,
                 ratio: '2.2/1',
