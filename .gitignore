@@ -16,3 +16,4 @@
 
 # Build output (scripts/build.mjs)
 /dist/
+graphify-out/
